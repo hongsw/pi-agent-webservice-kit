@@ -144,7 +144,7 @@ class MemoryMixer(nn.Module):
                 a = torch.sigmoid(self.decay(x)).transpose(1, 2)  # [B,H,L] in (0,1)
                 a = self.decay_floor + (1.0 - self.decay_floor) * a
             else:  # linear
-                a = torch.ones(B, self.h, L, device=x.device)
+                a = torch.ones(B, self.h, L, device=x.device, dtype=x.dtype)
             logA = torch.cumsum(torch.log(a + 1e-9), dim=-1)      # [B,H,L]
             D = logA[..., :, None] - logA[..., None, :]           # [B,H,L,L] = logA_t - logA_s
             idx = torch.arange(L, device=x.device)
@@ -164,6 +164,61 @@ class MemoryMixer(nn.Module):
                 o = o + ps.softmax(dim=-1) @ pv
 
         o = self.hnorm(o)                                         # head별 정규화
+        return self._aggregate(o, x)
+
+    @property
+    def is_rnn(self) -> bool:
+        """O(1) 상태 재귀(RNN)로 추론 가능한 규칙? swla는 윈도우 bounded 캐시(예외)."""
+        return self.base_rule in ("linear", "dla", "titans")
+
+    def state_bytes(self, batch: int) -> int:
+        """추론 시 캐싱하는 고정 크기 상태(S[dh,dh] + z[dh]) 바이트 — 시퀀스 길이 무관."""
+        per = self.h * (self.dh * self.dh + self.dh)
+        return batch * per * 4  # float32
+
+    def forward_recurrent(self, x):
+        """재귀(RNN) 추론 — 고정 크기 상태 S,z를 토큰마다 갱신. 병렬형과 수학적 동치.
+
+        선형 어텐션 이중성:
+          S_t = a_t·S_{t-1} + φ(k_t)⊗v_t ,  z_t = a_t·z_{t-1} + φ(k_t)
+          o_t = (φ(q_t)·S_t) / (φ(q_t)·z_t)
+        → L×L 어텐션 행렬을 만들지 않음(메모리 캐싱 최적화). 상태는 O(dh²)로 길이 무관.
+        """
+        if not self.is_rnn:
+            # swla: 윈도우 캐시(O(W)) — RNN 상태는 아니지만 길이무관 bounded. 병렬형 재사용.
+            return self.forward(x)
+
+        B, L, _ = x.shape
+        q, k, v = self.qkv(x).chunk(3, dim=-1)
+        q, k, v = self._heads(q), self._heads(k), self._heads(v)  # [B,H,L,dh]
+        qf = F.elu(q) + 1.0
+        kf = F.elu(k) + 1.0
+        if self.base_rule in ("dla", "titans"):
+            a = torch.sigmoid(self.decay(x)).transpose(1, 2)      # [B,H,L]
+            a = self.decay_floor + (1.0 - self.decay_floor) * a
+        else:
+            a = torch.ones(B, self.h, L, device=x.device, dtype=x.dtype)
+
+        S = torch.zeros(B, self.h, self.dh, self.dh, device=x.device, dtype=x.dtype)
+        z = torch.zeros(B, self.h, self.dh, device=x.device, dtype=x.dtype)
+        o = torch.empty(B, self.h, L, self.dh, device=x.device, dtype=x.dtype)
+        for t in range(L):                                        # 토큰 단위 재귀(상태 캐싱)
+            at = a[:, :, t]                                       # [B,H]
+            kt, vt, qt = kf[:, :, t], v[:, :, t], qf[:, :, t]     # [B,H,dh]
+            S = at[..., None, None] * S + kt[..., :, None] * vt[..., None, :]
+            z = at[..., None] * z + kt
+            num = torch.einsum("bhd,bhde->bhe", qt, S)           # φ(q)·S
+            den = (qt * z).sum(-1, keepdim=True).clamp_min(1e-6)
+            o[:, :, t] = num / den
+
+        if self.base_rule == "titans":                           # 영속 메모리(정적, 상태 불필요)
+            scale = 1.0 / math.sqrt(self.dh)
+            pk = self.pk[None].expand(B, -1, -1, -1)
+            pv = self.pv[None].expand(B, -1, -1, -1)
+            ps = (q @ pk.transpose(-1, -2)) * scale
+            o = o + ps.softmax(dim=-1) @ pv
+
+        o = self.hnorm(o)
         return self._aggregate(o, x)
 
     def _aggregate(self, o, x):
@@ -200,6 +255,11 @@ class Block(nn.Module):
 
     def forward(self, x):
         x = x + self.mix(self.n1(x))
+        x = x + self.mlp(self.n2(x))
+        return x
+
+    def forward_recurrent(self, x):
+        x = x + self.mix.forward_recurrent(self.n1(x))            # 믹서만 재귀, 나머지는 동일
         x = x + self.mlp(self.n2(x))
         return x
 
@@ -240,6 +300,25 @@ class GrowingMemoryModel(nn.Module):
         if return_aux:
             return logits, self.front.aux_loss(e)
         return logits
+
+    @torch.no_grad()
+    def forward_recurrent(self, x):
+        """재귀(RNN) 추론 — L×L 어텐션 없이 고정 상태 캐싱으로 처리(엣지 고정상태 추론, §8).
+
+        병렬형 forward()와 동치(동일 입력 → 동일 출력, fp 오차 내). 메모리는 길이 무관 상수 상태.
+        """
+        e = self.front(x)
+        if self.init_mode == "checkpoint":
+            e = e + self.mem_init(e.mean(dim=1, keepdim=True))    # 컨텍스트 요약(고정길이 입력 가정)
+        h = e
+        for blk in self.blocks:
+            h = blk.forward_recurrent(h)
+        return self.head(self.norm(h))
+
+    def state_bytes(self, batch: int) -> int:
+        """전 레이어 재귀 상태 합(바이트) — 시퀀스 길이와 무관한 고정 캐시 크기."""
+        return sum(blk.mix.state_bytes(batch) for blk in self.blocks
+                   if blk.mix.is_rnn)
 
 
 def build_real(cfg: dict, vocab: int, max_len: int) -> GrowingMemoryModel:

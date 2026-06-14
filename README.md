@@ -104,6 +104,13 @@ pi-agent-webservice-kit/
 - **인터페이스:** MCP(JSON-RPC stdio) · http.server 대시보드 · JSONL 리더보드(last-write-wins)
 - **모델(설계):** `growing-memory-pytorch`(base_rule/aggregation/segmentation) × SSL(V-JEPA/DINOv2/VICReg)
 
+## 🧠 메모리 캐싱 최적화 (RNN 추론)
+선형 어텐션 계열(linear/dla/titans)은 **학습은 병렬(O(L²)), 추론은 고정 상태 RNN 재귀(O(1) 상태)**로
+동치 변환된다 → 엣지에서 길이 무관 평평한 메모리. 4090 실측: 병렬 vs 재귀 출력 차이 ~1e-7,
+L=4096에서 메모리 ~20×↓, L=16384 병렬 OOM에도 재귀는 135KB 상수 상태로 동작.
+검증(병렬 에이전트): [`tutorial/autoresearch/RECURRENT.md`](tutorial/autoresearch/RECURRENT.md) ·
+`python3 tutorial/autoresearch/verify_recurrent.py --rule dla --stress --bench`
+
 ## 📚 더 읽기
 [`wiki/00-overview.md`](wiki/00-overview.md) · [`wiki/06-architecture.md`](wiki/06-architecture.md) ·
 [`report/final-project-template.md`](report/final-project-template.md) · Pi Docs <https://pi.dev/docs/latest>
