@@ -1,0 +1,39 @@
+# 실물(real) 백엔드용 스윕 — 실제 PyTorch 학습(MQAR 연관회상)으로 평가.
+# 작은 차원 + 실제 학습 스텝 rung으로 4090에서 ASHA가 빠르게 돌도록 구성.
+# torch 없으면 자동 mock 폴백. 강제 mock: AR_FORCE_MOCK=1.
+run_id: 2026-06-14_real_mqar_001
+seed: 0
+search:
+  controller: asha
+  rungs: [400, 1000, 2500]     # 실제 학습 스텝(MQAR grokking 상전이 반영)
+  reduction_factor: 3
+  max_trials: 9
+proxy:
+  task: factory_mqar           # 실제 MQAR recall로 평가
+  eval_every: 60
+space:
+  base_rule:    [linear, swla, dla, titans]
+  aggregation:  [residual, grm, soup, ssc]
+  segmentation: [constant, logarithmic]
+  init_mode:    [checkpoint, independent]
+  segment_len:  [32, 64, 128]
+  d_model:      [128, 256]
+  n_layers:     [2, 4]
+  n_heads:      [4, 8]
+  ssl:
+    encoder:          [vjepa, dinov2, vicreg]
+    invariance_coeff: [low, high]
+    positive_pair:    [consecutive_frame, same_unit_multiview, same_defect_class]
+real:                          # 실물 학습 런타임
+  device: cuda
+  vocab: 40
+  seq_len: 24
+  num_pairs: 4
+  batch: 64
+  lr: 0.003
+  full_seq_len: 36
+data:
+  manifest: nfs://nas/manifests/factory_v1.jsonl
+  cache:    /tmp/autoresearch_cache
+gate:
+  equivalence_tests: true

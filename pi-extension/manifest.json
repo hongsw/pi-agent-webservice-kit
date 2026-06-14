@@ -1,0 +1,47 @@
+{
+  "name": "autoresearch-ext",
+  "version": "0.1.0",
+  "description": "AutoResearch 노드 기능 확장 — 스윕 시작/중단, best config export 명령을 Pi 에이전트에 추가한다.",
+  "entry": "autoresearch_ext.py",
+  "runtime": "python3",
+  "commands": [
+    {
+      "name": "sweep_start",
+      "summary": "ASHA 스윕을 백그라운드 프로세스로 시작한다.",
+      "cli": "sweep-start",
+      "params": {
+        "config": {"type": "string", "required": false,
+                   "default": "tutorial/autoresearch/config/run_example.yaml",
+                   "description": "run config(yaml) 경로"},
+        "run_id": {"type": "string", "required": false,
+                   "description": "스윕 식별자(미지정 시 config의 run_id)"}
+      },
+      "returns": {"run_id": "string", "pid": "int", "status": "started"}
+    },
+    {
+      "name": "sweep_stop",
+      "summary": "진행 중인 스윕 프로세스를 중단한다.",
+      "cli": "sweep-stop",
+      "params": {
+        "run_id": {"type": "string", "required": true, "description": "중단할 스윕 식별자"}
+      },
+      "returns": {"run_id": "string", "status": "stopped|not_running"}
+    },
+    {
+      "name": "export_best",
+      "summary": "리더보드 best config를 추론/엣지 배포 번들로 export한다(동치성 재확인).",
+      "cli": "export-best",
+      "params": {
+        "out": {"type": "string", "required": false,
+                "default": "tutorial/autoresearch/runs/export",
+                "description": "출력 디렉터리"}
+      },
+      "returns": {"export_path": "string", "bundle": "object"}
+    }
+  ],
+  "uses": {
+    "mcp": "autoresearch-mcp",
+    "skills": ["validity-gate", "leaderboard-analysis"],
+    "web": "web/server.py"
+  }
+}

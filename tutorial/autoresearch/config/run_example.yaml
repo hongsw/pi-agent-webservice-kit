@@ -1,0 +1,31 @@
+# §9 실행 설정 예 — AutoResearch 스윕 한 번을 정의한다.
+# torch/growing-memory 없이도 mock 백엔드로 끝까지 동작(설계 T0: 루프 폐쇄 검증).
+run_id: 2026-06-14_ssc_titans_001
+seed: 7
+search:
+  controller: asha
+  rungs: [1000, 4000, 16000]   # rung별 누적 학습 스텝 (저예산→승급)
+  reduction_factor: 4          # eta: 각 rung 상위 1/eta만 승급
+  max_parallel: 3              # §6 병렬 스윕(단일프로세스 데모는 순차 실행)
+  max_trials: 24               # 샘플할 신규 config 수(탐색 예산)
+proxy:
+  task: factory_mqar           # | short_horizon_pred
+  eval_every: 1000
+space:
+  base_rule:    [linear, swla, dla, titans]
+  aggregation:  [residual, grm, soup, ssc]
+  segmentation: [constant, logarithmic]
+  init_mode:    [checkpoint, independent]
+  segment_len:  [128, 256, 512]
+  d_model:      [512, 768, 1024]
+  n_layers:     [6, 12, 24]
+  n_heads:      [8, 12, 16]
+  ssl:
+    encoder:          [vjepa, dinov2, vicreg]
+    invariance_coeff: [low, high]
+    positive_pair:    [consecutive_frame, same_unit_multiview, same_defect_class]
+data:
+  manifest: nfs://nas/manifests/factory_v1.jsonl   # 없으면 합성 데이터로 진행
+  cache:    /tmp/autoresearch_cache
+gate:
+  equivalence_tests: true      # 학습 전 유효성 검증(§3.4)

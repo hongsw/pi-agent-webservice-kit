@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AutoResearch 노드 · 대시보드</title>
+<style>
+  :root {
+    --bg:#0e1116; --panel:#161b22; --line:#283040; --ink:#e6edf3; --mut:#8b96a5;
+    --accent:#4f8cff; --good:#3fb950; --warn:#d29922; --bad:#f85149;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:650}
+  .tag{font:11px/1 var(--mono);padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+  main{padding:24px;max-width:1180px;margin:0 auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .card .v{font-size:26px;font-weight:680;margin-top:6px}
+  .card .s{color:var(--mut);font:12px var(--mono);margin-top:4px;word-break:break-all}
+  .bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 16px;
+    font-weight:600;cursor:pointer;font-size:13px}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  button:disabled{opacity:.5;cursor:default}
+  input{background:#0b0e13;border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:8px 10px;font:13px var(--mono)}
+  h2{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}
+  th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:0}
+  td.cfg{font:11px var(--mono);color:var(--mut);max-width:420px}
+  .pill{font:11px var(--mono);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+  .pill.done{color:var(--good);border-color:#1f3d29}
+  .pill.running{color:var(--warn);border-color:#3d3411}
+  .pill.failed{color:var(--bad);border-color:#3d1d1c}
+  .num{font:13px var(--mono);text-align:right}
+  .runs{display:grid;gap:10px}
+  .run{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .run pre{margin:8px 0 0;font:11px/1.5 var(--mono);color:var(--mut);white-space:pre-wrap;max-height:120px;overflow:auto}
+  .muted{color:var(--mut)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🔬 AutoResearch 노드</h1>
+  <span class="tag" id="backendTag">backend: …</span>
+  <span class="tag">growing-memory 설계공간 × SSL 표현축 자동 스윕(ASHA)</span>
+  <span class="muted" style="margin-left:auto" id="clock"></span>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+
+  <div class="bar">
+    <button id="btnSweep">▶ 스윕 시작</button>
+    <input id="runId" placeholder="run_id (선택)" size="28" />
+    <button class="ghost" id="btnExport">⬇ best export</button>
+    <button class="ghost" id="btnRefresh">↻ 새로고침</button>
+    <span class="muted" id="msg"></span>
+  </div>
+
+  <h2>리더보드 (상위 trial)</h2>
+  <table id="lbTable">
+    <thead><tr>
+      <th>#</th><th>trial</th><th class="num">proxy</th><th class="num">full</th>
+      <th class="num">cost(step)</th><th>rung</th><th>status</th><th>config</th>
+    </tr></thead>
+    <tbody id="lbBody"><tr><td colspan="8" class="muted">아직 결과 없음 — 스윕을 시작하세요.</td></tr></tbody>
+  </table>
+
+  <h2>스윕 실행 상태</h2>
+  <div class="runs" id="runs"><div class="muted">실행 중인 스윕 없음.</div></div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = v => v==null ? "—" : (typeof v==="number" ? v.toFixed(4).replace(/\.?0+$/,"") : v);
+
+async function jget(u){ const r=await fetch(u); return r.json(); }
+async function jpost(u,b){ const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})}); return r.json(); }
+
+async function refresh(){
+  try{
+    const s = await jget("/api/summary");
+    $("#backendTag").textContent = "backend: " + s.backend;
+    const lb = s.leaderboard || {};
+    const best = lb.best || {};
+    $("#cards").innerHTML = [
+      ["trials", lb.trials ?? 0, "scored " + (lb.scored ?? 0)],
+      ["best full_score", fmt(best.full_score), best.trial_id ? ("trial " + best.trial_id) : "—"],
+      ["best proxy_score", fmt(best.proxy_score), "exploration signal"],
+      ["총 학습비용", (lb.total_cost_steps ?? 0).toLocaleString() + " steps", "ASHA rungs"],
+      ["NAS 커밋 샤드", (s.nas?.committed_shards ?? 0), "embedded " + (s.nas?.embedded_shards ?? 0)],
+    ].map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v">${c[1]}</div><div class="s">${c[2]}</div></div>`).join("");
+
+    const d = await jget("/api/leaderboard?n=20");
+    const rows = d.rows||[];
+    $("#lbBody").innerHTML = rows.length ? rows.map((r,i)=>`
+      <tr><td>${i+1}</td><td>${r.trial_id}</td>
+      <td class="num">${fmt(r.proxy_score)}</td>
+      <td class="num">${fmt(r.full_score)}</td>
+      <td class="num">${(r.cost||0).toLocaleString()}</td>
+      <td>${r.rung}</td>
+      <td><span class="pill ${r.status}">${r.status}</span></td>
+      <td class="cfg">${cfgStr(r.cfg)}</td></tr>`).join("")
+      : `<tr><td colspan="8" class="muted">아직 결과 없음 — 스윕을 시작하세요.</td></tr>`;
+
+    const rd = await jget("/api/runs");
+    const runs = rd.runs||[];
+    $("#runs").innerHTML = runs.length ? runs.map(r=>`
+      <div class="run">
+        <b>${r.run_id}</b> <span class="pill ${r.status}">${r.status}</span>
+        ${r.summary ? `<span class="muted"> · best full ${fmt(r.summary.best?.full_score)} · rank_corr ${fmt(r.summary.proxy_full_rank_corr)} · gate탈락 ${r.summary.rejected_by_gate}</span>`:""}
+        <pre>${(r.last_logs||[]).join("\n")||"…"}</pre>
+      </div>`).join("") : `<div class="muted">실행 중인 스윕 없음.</div>`;
+  }catch(e){ $("#msg").textContent = "오류: "+e; }
+}
+function cfgStr(c){ if(!c) return ""; const ssl=c.ssl?` ssl=${c.ssl.encoder}/${c.ssl.positive_pair}`:"";
+  return `${c.base_rule}+${c.aggregation} seg=${c.segment_len} d=${c.d_model}L${c.n_layers}${ssl}`; }
+
+$("#btnSweep").onclick = async ()=>{
+  $("#btnSweep").disabled=true; $("#msg").textContent="스윕 시작 중…";
+  const r = await jpost("/api/sweep",{run_id:$("#runId").value||undefined});
+  $("#msg").textContent = r.started ? ("시작됨: "+r.started) : ("오류: "+(r.error||""));
+  $("#btnSweep").disabled=false; refresh();
+};
+$("#btnExport").onclick = async ()=>{
+  const r = await jpost("/api/export",{});
+  $("#msg").textContent = r.export_path ? ("export → "+r.export_path) : ("오류: "+(r.error||""));
+};
+$("#btnRefresh").onclick = refresh;
+setInterval(()=>{ $("#clock").textContent=new Date().toLocaleTimeString(); }, 1000);
+setInterval(refresh, 2500);
+refresh();
+</script>
+</body>
+</html>

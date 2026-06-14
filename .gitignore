@@ -8,3 +8,8 @@ __pycache__/
 dist/
 build/
 .next/
+
+# AutoResearch 실행 산출물(리더보드/체크포인트/스냅샷)
+runs/
+.ratchet_snapshots/
+pi-extension/.runs/

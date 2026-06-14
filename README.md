@@ -1,51 +1,109 @@
-# Pi AI Agent 웹 서비스 — 기말 프로젝트 키트
+# AutoResearch 노드 — Pi AI Agent 웹 서비스
 
-20가지 서비스 시나리오 중 하나를 골라 **Pi 기반 AI Agent 웹 서비스**(Skill · MCP · Pi Extension ·
-Web UI 결합)를 완성하기 위한 **개념 위키 + 실행 가능한 실습 + 리포트 템플릿** 모음입니다.
+> **growing-memory 설계공간 × SSL 표현축을 자동으로 스윕(ASHA)해, 이 공장 데이터에
+> 맞는 최적 (표현→기억) 구성을 찾아내는 단일 GPU 노드** — 를 Pi 기반 AI Agent
+> 웹 서비스(Skill · MCP · Pi Extension · Web UI)로 구현한 기말 프로젝트.
 
-> 📋 **과제 요구사항·제출물·평가 기준 → [`과제안내.md`](과제안내.md)** 부터 읽으세요.
-> 자매 키트(파인튜닝): [nlp-unsloth-finetuning-kit](https://github.com/xide-projext/nlp-unsloth-finetuning-kit).
+karpathy의 [autoresearch](https://github.com/karpathy/autoresearch)(에이전트가 `train.py`를
+고치고 `val_bpb`로 keep/revert 래칫) 원 컨셉을 **제조 도메인 + growing-memory 탐색공간**으로
+일반화한다. 자세한 매핑은 [`wiki/00-overview.md`](wiki/00-overview.md) 참조.
+
+> 📋 과제 요구사항·평가 기준 → [`과제안내.md`](과제안내.md)
 
 ---
 
-## 📂 구조 (스캐폴드 — 채워가는 중)
+## 🧩 키트 4요소 매핑
+
+| 요소 | 이 프로젝트에서 | 코드 |
+|---|---|---|
+| **Pi Agent** | AutoResearch 오케스트레이터(스윕 운영·리더보드 질의·best 추천) | `tutorial/autoresearch/` |
+| **Skill** | `validity-gate`(학습 전 동치/shape 검증), `leaderboard-analysis`(best·프록시 신뢰도) | `skills/` |
+| **MCP** | `autoresearch-mcp`(리더보드 read/write/get, NAS 샤드, run 상태, export) | `web/mcp/` |
+| **Pi Extension** | `autoresearch-ext`(sweep start/stop, best export) | `pi-extension/` |
+| **Web UI** | 리더보드 대시보드 + 스윕 런처(무설치 stdlib 서버) | `web/` |
+
+---
+
+## 🚀 빠른 시작 (로컬 · 무설치)
+
+torch / `growing-memory-pytorch` 가 없어도 **mock 백엔드**로 전 과정이 동작한다(설계 T0).
+
+```bash
+# 1) AutoResearch 스윕 실행 (게이트 → ASHA → 리더보드 → best)
+cd tutorial/autoresearch
+python3 run.py run --config config/run_example.yaml
+python3 run.py top -n 5
+python3 run.py export                       # best config 번들 export
+
+# 2) Web UI (CLI 불가 요구사항 충족)
+cd ..                                        # 저장소 루트
+python3 web/server.py                        # http://localhost:8765
+
+# 3) Skill 직접 실행
+python3 skills/validity-gate/scripts/check.py --space tutorial/autoresearch/config/run_example.yaml -n 200
+python3 skills/leaderboard-analysis/scripts/analyze.py -n 10
+
+# 4) MCP 서버 점검
+python3 web/mcp/autoresearch_mcp.py --selftest
+
+# 5) Pi Extension 명령
+python3 pi-extension/autoresearch_ext.py sweep-start
+python3 pi-extension/autoresearch_ext.py export-best
+```
+
+### karpathy 원형 체험 (3파일 ratchet 루프)
+```bash
+cd tutorial/autoresearch/lab
+python3 run_lab.py --iterations 30          # train.py 수정 → val_bpb → keep/revert
+```
+`program.md`(연구방향) · `prepare.py`(불변 평가) · `train.py`(에이전트가 고치는 유일 파일) 구조.
+
+---
+
+## 🖥️ 4090 노드 배포 (실학습)
+
+실제 학습은 RTX 4090 머신에서 수행한다(설계 §2). 배포·실행은 한 줄:
+
+```bash
+scripts/deploy_4090.sh run      # rsync 후 4090에서 스윕 실행
+scripts/deploy_4090.sh web      # 4090에서 대시보드 기동
+```
+`AR_HOST`(기본 `martin@linux-builder`)·`AR_DEST`로 대상 변경. GPU 가용성은 실행 로그의
+`[autoresearch] GPU: {...cuda_op_ok: True}` 로 확인된다.
+
+**growing-memory 실물 연결:** 머신에서 `export GROWING_MEMORY_HOME=<repo경로>` 설정 시
+`model_adapter`가 실물 `build`/동치테스트를 호출하고, 없으면 mock으로 폴백한다.
+
+---
+
+## 📂 구조
 
 ```
 pi-agent-webservice-kit/
-├── README.md                       ← 지금 이 파일
-├── 과제안내.md                      ← 과제 요구사항·제출물·평가 기준
-├── wiki/                           ← 개념 위키 (개념→예시→체크리스트)
-│   ├── 00-overview.md              · 큰그림 + 진행 순서
-│   ├── 01-pi-agent-basics.md       · Pi로 AI Agent 만들기
-│   ├── 02-skills.md                · Skill 설계·활용 (최소 1개)
-│   ├── 03-mcp.md                   · MCP로 외부 도구/API/DB 연결
-│   ├── 04-pi-extension.md          · Pi Extension으로 기능 확장
-│   ├── 05-web-ui.md                · Web UI 제공 (CLI 불가)
-│   ├── 06-architecture.md          · 시스템 구조 설계
-│   ├── 07-resources.md             · 참고문헌·링크
-│   └── 08-glossary.md              · 용어집
-├── tutorial/                       ← 최소 동작 실습 (에이전트+Skill+MCP+Web UI)
-├── web/                            ← Web UI 코드
-└── report/
-    └── final-project-template.md   ← 기말 리포트 템플릿
+├── tutorial/autoresearch/        ← AutoResearch 코어(Pi Agent 본체)
+│   ├── autoresearch/             · search_space · validity_gate · controller_asha
+│   │                               proxy · leaderboard · ratchet · model_adapter
+│   │                               data_interface · export · loop · config_io
+│   ├── config/run_example.yaml   · §9 실행 설정(탐색공간·rung·프록시)
+│   ├── run.py                    · CLI(run/top/export)
+│   └── lab/                      · karpathy 3파일 ratchet 원형(program/prepare/train)
+├── web/  server.py · static/     ← Web UI 대시보드 + REST
+│   └── mcp/autoresearch_mcp.py   ← MCP 서버(stdio)
+├── skills/                       ← validity-gate · leaderboard-analysis
+├── pi-extension/                 ← autoresearch-ext (manifest + 명령)
+├── scripts/deploy_4090.sh        ← 4090 배포/실행
+├── wiki/ (00~08)                 ← 개념·아키텍처 위키
+└── report/                       ← 기말 보고서
 ```
 
 ---
 
-## 🚀 빠른 시작
+## 🔧 기술 스택
+- **언어/런타임:** Python 3.10+ (코어는 순수 stdlib · 무설치 실행), 실학습 시 PyTorch 2.x + CUDA
+- **탐색:** ASHA(Asynchronous Successive Halving) · 유효성 게이트 · 프록시(factory_mqar / short_horizon)
+- **인터페이스:** MCP(JSON-RPC stdio) · http.server 대시보드 · JSONL 리더보드(last-write-wins)
+- **모델(설계):** `growing-memory-pytorch`(base_rule/aggregation/segmentation) × SSL(V-JEPA/DINOv2/VICReg)
 
-1. **과제 이해** — [`과제안내.md`](과제안내.md)에서 시나리오·요구사항·평가 기준 확인.
-2. **시나리오 선택** — 20가지 중 1개(또는 직접 제안 → 메일).
-3. **개념 잡기** — [`wiki/00-overview.md`](wiki/00-overview.md) → Pi → Skill → MCP → Pi Extension → Web UI.
-4. **실습** — [`tutorial/`](tutorial/)의 최소 동작 예제로 골격을 잡고 시나리오에 맞게 확장.
-5. **리포트** — [`report/final-project-template.md`](report/final-project-template.md)에 정리.
-
----
-
-## 🎯 한 줄 요약
-
-> **Pi**(에이전트 런타임) + **Skill**(반복 작업 묶음) + **MCP**(외부 도구 연결) +
-> **Pi Extension**(기능 확장) + **Web UI**(사용자 화면) = 실제 서비스형 프로토타입.
-> 점수는 "API를 호출했다"가 아니라 **네 요소를 어떻게 결합해 실제 문제를 풀었는가**에서 갈린다.
-
-참고문헌: [`wiki/07-resources.md`](wiki/07-resources.md) · Pi Docs <https://pi.dev/docs/latest>
+## 📚 더 읽기
+[`wiki/00-overview.md`](wiki/00-overview.md) · [`wiki/06-architecture.md`](wiki/06-architecture.md) ·
+[`report/final-project-template.md`](report/final-project-template.md) · Pi Docs <https://pi.dev/docs/latest>
