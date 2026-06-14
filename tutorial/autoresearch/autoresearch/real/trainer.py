@@ -68,14 +68,25 @@ class RealRun:
             self.opt.step()
             self.trained_steps += 1
 
+    def _infer(self, inp):
+        """추론 경로 — eval_recurrent=True면 상수메모리 RNN 재귀(엣지 배포 경로와 동일).
+
+        병렬형과 동치(diff ~1e-7)지만 L×L 어텐션을 만들지 않아 메모리가 길이 무관.
+        swla는 forward_recurrent 내부에서 병렬로 위임된다.
+        """
+        if self.rt.get("eval_recurrent", True):
+            return self.model.forward_recurrent(inp)
+        return self.model(inp)
+
     @torch.no_grad()
     def _eval(self, hard: bool, n_batches: int = 4):
         self.model.eval()
+        self.eval_gen.manual_seed(12345)     # 평가 배치 고정(재현성·proxy↔full 공정 비교)
         correct = total = 0
         ce_sum = ce_n = 0.0
         for _ in range(n_batches):
             inp, tgt, qmask = self._batch(train=False, hard=hard)
-            logits = self.model(inp)
+            logits = self._infer(inp)
             ce_sum += _ce(logits, tgt).item()
             ce_n += 1
             if qmask.any():

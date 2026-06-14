@@ -57,6 +57,22 @@ def equivalence(rule: str, device: str) -> dict:
             "state_bytes_B1": model.state_bytes(1)}
 
 
+def stream_check(rule: str, device: str) -> dict:
+    """토큰 스트리밍(step 단위) vs 병렬 forward 동치 — 엣지 실시간 추론 경로 검증.
+
+    스트리밍은 init_mode=independent에서만 유효(checkpoint는 전체 컨텍스트 평균 필요).
+    """
+    cfg = {**BASE, "base_rule": rule, "init_mode": "independent"}
+    torch.manual_seed(0)
+    model = build_real(cfg, VOCAB, max_len=512).to(device).eval()
+    x = torch.randint(1, VOCAB, (2, 80), device=device)
+    with torch.no_grad():
+        y_par = model(x)
+        y_stream = model.stream(x)
+    diff = (y_par - y_stream).abs().max().item()
+    return {"max_abs_diff": diff, "pass": diff < 1e-3, "L": 80}
+
+
 def stress(rule: str, device: str) -> dict:
     """동치성 강건성 — aggregation×segmentation×batch×길이를 바꿔도 병렬=재귀인지."""
     worst = 0.0
@@ -111,6 +127,7 @@ def main(argv=None) -> int:
     ap.add_argument("--rule", required=True, choices=["linear", "swla", "dla", "titans"])
     ap.add_argument("--bench", action="store_true")
     ap.add_argument("--stress", action="store_true")
+    ap.add_argument("--stream", action="store_true")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--device", default="cuda")
     args = ap.parse_args(argv)
@@ -121,6 +138,8 @@ def main(argv=None) -> int:
            "equivalence": equivalence(args.rule, device)}
     if args.stress:
         out["stress"] = stress(args.rule, device)
+    if args.stream:
+        out["stream"] = stream_check(args.rule, device)
     if args.bench:
         out["bench"] = bench(args.rule, device)
 

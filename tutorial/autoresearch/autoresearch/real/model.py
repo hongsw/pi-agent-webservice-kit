@@ -52,6 +52,10 @@ class SSLFront(nn.Module):
         e = self.emb(x) + self.pos[:, :L]
         return e
 
+    def emb_at(self, x_t, t: int):
+        """단일 토큰 임베딩 + 위치 t 인코딩 — 스트리밍 step용. x_t:[B] → [B,d]."""
+        return self.emb(x_t) + self.pos[:, t]
+
     def aux_loss(self, e):
         """encoder 변형별 SSL aux loss(표현 정규화). invariance_coeff로 가중."""
         if self.coeff <= 0:
@@ -221,6 +225,60 @@ class MemoryMixer(nn.Module):
         o = self.hnorm(o)
         return self._aggregate(o, x)
 
+    # ── 진정한 토큰 스트리밍(step 단위, O(1)/스텝) ───────────────────────────
+    def init_state(self, batch: int, device, dtype) -> dict:
+        """스트리밍 상태 초기화. rnn: 고정 S,z. swla: 윈도우 링버퍼(O(W))."""
+        if self.is_rnn:
+            return {"S": torch.zeros(batch, self.h, self.dh, self.dh, device=device, dtype=dtype),
+                    "z": torch.zeros(batch, self.h, self.dh, device=device, dtype=dtype)}
+        return {"kbuf": None, "vbuf": None}  # swla: 마지막 W개 (k,v)
+
+    def step(self, x_t, state: dict):
+        """토큰 1개 처리. x_t:[B,d] → o:[B,d], state 갱신(인플레이스 dict 반환).
+
+        rnn은 고정 상태만 갱신(시퀀스 길이 무관 O(1)). swla는 마지막 W개 (k,v) 윈도우 유지.
+        """
+        B = x_t.shape[0]
+        q, k, v = self.qkv(x_t).chunk(3, dim=-1)                  # [B,d] each
+        q = q.view(B, self.h, self.dh)
+        k = k.view(B, self.h, self.dh)
+        v = v.view(B, self.h, self.dh)
+        scale = 1.0 / math.sqrt(self.dh)
+
+        if self.is_rnn:
+            qf = F.elu(q) + 1.0
+            kf = F.elu(k) + 1.0
+            if self.base_rule in ("dla", "titans"):
+                a = torch.sigmoid(self.decay(x_t))               # [B,H]
+                a = self.decay_floor + (1.0 - self.decay_floor) * a
+            else:
+                a = torch.ones(B, self.h, device=x_t.device, dtype=x_t.dtype)
+            S = a[..., None, None] * state["S"] + kf[..., :, None] * v[..., None, :]
+            z = a[..., None] * state["z"] + kf
+            num = torch.einsum("bhd,bhde->bhe", qf, S)           # [B,H,dh]
+            den = (qf * z).sum(-1, keepdim=True).clamp_min(1e-6)
+            o = num / den
+            state["S"], state["z"] = S, z
+            if self.base_rule == "titans":
+                pk = self.pk[None].expand(B, -1, -1, -1)          # [B,H,P,dh]
+                pv = self.pv[None].expand(B, -1, -1, -1)
+                ps = torch.einsum("bhd,bhpd->bhp", q, pk) * scale # [B,H,P]
+                o = o + torch.einsum("bhp,bhpd->bhd", ps.softmax(-1), pv)
+        else:
+            # swla: 윈도우 링버퍼에 현재 (k,v) 추가 후 마지막 W개에 softmax attention
+            kt, vt = k[:, :, None, :], v[:, :, None, :]           # [B,H,1,dh]
+            kbuf = kt if state["kbuf"] is None else torch.cat([state["kbuf"], kt], dim=2)
+            vbuf = vt if state["vbuf"] is None else torch.cat([state["vbuf"], vt], dim=2)
+            kbuf, vbuf = kbuf[:, :, -self.window:], vbuf[:, :, -self.window:]
+            state["kbuf"], state["vbuf"] = kbuf, vbuf
+            scores = torch.einsum("bhd,bhwd->bhw", q, kbuf) * scale  # [B,H,W']
+            attn = scores.softmax(-1)
+            o = torch.einsum("bhw,bhwd->bhd", attn, vbuf)         # [B,H,dh]
+
+        o = self.hnorm(o)                                         # [B,H,dh]
+        out = self._aggregate(o[:, :, None, :], x_t[:, None, :])  # [B,1,d]
+        return out[:, 0], state
+
     def _aggregate(self, o, x):
         # o: [B,H,L,dh]
         B, H, L, dh = o.shape
@@ -262,6 +320,12 @@ class Block(nn.Module):
         x = x + self.mix.forward_recurrent(self.n1(x))            # 믹서만 재귀, 나머지는 동일
         x = x + self.mlp(self.n2(x))
         return x
+
+    def step(self, x_t, state: dict):
+        o, state = self.mix.step(self.n1(x_t), state)
+        x_t = x_t + o
+        x_t = x_t + self.mlp(self.n2(x_t))
+        return x_t, state
 
 
 class GrowingMemoryModel(nn.Module):
@@ -319,6 +383,35 @@ class GrowingMemoryModel(nn.Module):
         """전 레이어 재귀 상태 합(바이트) — 시퀀스 길이와 무관한 고정 캐시 크기."""
         return sum(blk.mix.state_bytes(batch) for blk in self.blocks
                    if blk.mix.is_rnn)
+
+    # ── 진정한 토큰 스트리밍 API(엣지: 토큰 1개씩, 고정 상태) ─────────────────
+    def init_states(self, batch: int, device, dtype) -> list:
+        return [blk.mix.init_state(batch, device, dtype) for blk in self.blocks]
+
+    @torch.no_grad()
+    def step(self, token, t: int, states: list):
+        """토큰 1개(+위치 t) → 다음 토큰 logits. states를 갱신해 반환.
+
+        init_mode=checkpoint는 전체 컨텍스트 평균이 필요해 스트리밍 불가 → independent만 지원.
+        """
+        if self.init_mode == "checkpoint":
+            raise RuntimeError("streaming step은 init_mode=independent에서만 지원됩니다")
+        h = self.front.emb_at(token, t)                          # [B,d]
+        for blk, st in zip(self.blocks, states):
+            h, _ = blk.step(h, st)
+        logits = self.head(self.norm(h))                        # [B,V]
+        return logits, states
+
+    @torch.no_grad()
+    def stream(self, x):
+        """시퀀스를 토큰 단위로 스트리밍 처리 → [B,L,V]. forward()와 동치(independent)."""
+        B, L = x.shape
+        states = self.init_states(B, x.device, self.head.weight.dtype)
+        outs = []
+        for t in range(L):
+            logits, states = self.step(x[:, t], t, states)
+            outs.append(logits)
+        return torch.stack(outs, dim=1)
 
 
 def build_real(cfg: dict, vocab: int, max_len: int) -> GrowingMemoryModel:
