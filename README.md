@@ -111,6 +111,12 @@ L=4096에서 메모리 ~20×↓, L=16384 병렬 OOM에도 재귀는 135KB 상수
 검증(병렬 에이전트): [`tutorial/autoresearch/RECURRENT.md`](tutorial/autoresearch/RECURRENT.md) ·
 `python3 tutorial/autoresearch/verify_recurrent.py --rule dla --stress --bench`
 
+## 🔬 grokking 튜닝 (8변형 회상 학습)
+8변형(base_rule×aggregation) 모두 MQAR 연관회상을 학습. 정확회상 grok 난이도는 메커니즘에
+좌우됨 — softmax/영속메모리/게이팅/(감쇠+용량)은 grok(→1.0), 순수 선형은 다중키 천장(~0.5).
+1키 회상은 전부 1.0. → [`tutorial/autoresearch/GROKKING.md`](tutorial/autoresearch/GROKKING.md) ·
+`python3 tutorial/autoresearch/grok_tune.py --variants all --pairs 2`
+
 ## 📚 더 읽기
 [`wiki/00-overview.md`](wiki/00-overview.md) · [`wiki/06-architecture.md`](wiki/06-architecture.md) ·
 [`report/final-project-template.md`](report/final-project-template.md) · Pi Docs <https://pi.dev/docs/latest>
