@@ -14,7 +14,8 @@ keywords = ["linear-attention", "titans", "rnn", "long-context", "autoresearch",
 dependencies = ["torch>=2.1"]
 
 [project.optional-dependencies]
-hf = ["transformers>=4.40"]      # HuggingFace/Unsloth 래퍼용
+hf = ["transformers>=4.40"]            # HuggingFace/Unsloth 래퍼용
+titans = ["titans-pytorch"]           # 검증된 정확 Titans 백엔드(lucidrains)
 dev = ["pytest"]
 
 [project.urls]
