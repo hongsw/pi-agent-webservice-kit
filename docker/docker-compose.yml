@@ -1,0 +1,43 @@
+# AutoResearch 미연결 노드의 도커 구현 — NAS(샤드 저장/제공) + Edge(상수메모리 추론).
+# 학습 노드(4090)는 별도(스윕은 run.py). 여기선 NAS read 소스와 엣지 배포 타깃을 실서버로 제공.
+#
+#   docker compose -f docker/docker-compose.yml up -d --build
+#   curl localhost:8090/manifest          # NAS 커밋 샤드
+#   curl -X POST localhost:8091/infer -d '{"tokens":[1,2,3,4,5]}'   # 엣지 스트리밍 추론
+#   curl localhost:8091/memory_demo       # 상태 바이트가 길이 무관 상수임을 실증
+#
+# 학습 루프를 이 NAS에 연결:
+#   manifest: http://localhost:8090/manifest  (config의 data.manifest)
+
+services:
+  nas:
+    build: ./nas
+    image: autoresearch-nas
+    container_name: ar-nas
+    environment:
+      PORT: "8080"
+      PUBLIC_BASE: "http://localhost:8090"   # 호스트에서 샤드 접근 시 포트 매핑 반영
+      SEED_SHARDS: "8"
+      SAMPLES_PER_SHARD: "256"
+    ports:
+      - "8090:8080"
+    volumes:
+      - nas-data:/data
+
+  edge:
+    build: ./edge
+    image: autoresearch-edge
+    container_name: ar-edge
+    environment:
+      PORT: "8091"
+      EXPORT_DIR: "/exports"
+    ports:
+      - "8091:8091"
+    volumes:
+      - exports:/exports        # 학습 노드의 best_config.json을 여기에 두면 엣지가 로드
+    depends_on:
+      - nas
+
+volumes:
+  nas-data:
+  exports:

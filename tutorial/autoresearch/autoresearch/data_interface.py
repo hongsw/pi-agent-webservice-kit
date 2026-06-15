@@ -58,12 +58,31 @@ class NASDataInterface:
         return shards
 
     def _local_manifest_path(self) -> str | None:
-        """nfs:// 스킴은 stub에서 로컬 경로로 취급. 실물에선 마운트 경로로 변환."""
+        """매니페스트를 로컬 경로로 해석.
+
+        - http(s)://  : NAS 도커 서버에서 매니페스트를 받아 로컬 캐시에 저장(실연결).
+        - nfs://      : 마운트 미설정 시 None(stub).
+        - 로컬 경로   : 존재하면 그대로.
+        """
         m = self.manifest
+        if m.startswith("http://") or m.startswith("https://"):
+            return self._fetch_http(m)
         if m.startswith("nfs://"):
-            # 데모: nfs://nas/manifests/x.jsonl → 존재 시에만 사용, 아니면 None
             return None
         return m if os.path.exists(m) else None
+
+    def _fetch_http(self, url: str) -> str | None:
+        """NAS HTTP 서버에서 매니페스트를 받아 캐시에 저장하고 경로 반환(없으면 None)."""
+        import urllib.request
+        dst = os.path.join(self.cache_dir, "manifest.jsonl")
+        try:
+            with urllib.request.urlopen(url, timeout=5) as r:
+                data = r.read()
+            with open(dst, "wb") as f:
+                f.write(data)
+            return dst
+        except Exception:
+            return None
 
     def cache_status(self) -> dict[str, Any]:
         committed = self.list_shards(only_committed=True)
@@ -76,17 +95,27 @@ class NASDataInterface:
         }
 
     def iter_samples(self, limit: int | None = None) -> Iterator[dict[str, Any]]:
-        """커밋된 샤드에서 샘플 스트림(stub). 실데이터 없으면 비어 있음 → 프록시는 합성 사용."""
+        """커밋된 샤드에서 샘플 스트림. 샤드 path가 http면 NAS에서 받아 읽는다."""
+        import urllib.request
         count = 0
         for shard in self.list_shards(only_committed=True):
-            if not os.path.exists(shard.path):
+            lines: list[str] = []
+            if shard.path.startswith("http://") or shard.path.startswith("https://"):
+                try:
+                    with urllib.request.urlopen(shard.path, timeout=5) as r:
+                        lines = r.read().decode("utf-8").splitlines()
+                except Exception:
+                    continue
+            elif os.path.exists(shard.path):
+                with open(shard.path, "r", encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            else:
                 continue
-            with open(shard.path, "r", encoding="utf-8") as f:
-                for line in f:
-                    if limit is not None and count >= limit:
-                        return
-                    try:
-                        yield json.loads(line)
-                        count += 1
-                    except json.JSONDecodeError:
-                        continue
+            for line in lines:
+                if limit is not None and count >= limit:
+                    return
+                try:
+                    yield json.loads(line)
+                    count += 1
+                except json.JSONDecodeError:
+                    continue

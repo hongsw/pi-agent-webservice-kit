@@ -104,6 +104,11 @@ pi-agent-webservice-kit/
 - **인터페이스:** MCP(JSON-RPC stdio) · http.server 대시보드 · JSONL 리더보드(last-write-wins)
 - **모델(설계):** `growing-memory-pytorch`(base_rule/aggregation/segmentation) × SSL(V-JEPA/DINOv2/VICReg)
 
+## 🐳 NAS · Edge 도커 서버 (실연결)
+설계의 NAS(§7)·엣지 배포(§8)를 **실행되는 도커 서버**로 구현. `docker compose -f docker/docker-compose.yml up -d --build`
+→ NAS(:8090)가 커밋 샤드를 HTTP로 제공(학습 루프가 실제 read), Edge(:8091)가 best_config 로드 후
+상수메모리 스트리밍 추론(상태 135KB 길이 무관). → [`docker/README.md`](docker/README.md)
+
 ## 🧠 메모리 캐싱 최적화 (RNN 추론)
 선형 어텐션 계열(linear/dla/titans)은 **학습은 병렬(O(L²)), 추론은 고정 상태 RNN 재귀(O(1) 상태)**로
 동치 변환된다 → 엣지에서 길이 무관 평평한 메모리. 4090 실측: 병렬 vs 재귀 출력 차이 ~1e-7,
