@@ -180,13 +180,13 @@ def build(cfg: dict[str, Any]) -> ModelHandle:
     (업스트림 growing-memory-pytorch가 build API를 노출하면 그쪽을 우선 시도.)
     """
     mod = _try_import_real()
-    if mod is not None:
-        builder = getattr(mod, "build", None) or getattr(mod, "build_model", None)
-        if callable(builder):
-            try:
-                return ModelHandle(cfg, backend="real-upstream", real_model=builder(cfg))
-            except Exception:
-                pass
+    if mod is not None and hasattr(mod, "RealRun") and _real_backend_available():
+        # 설치된 growing_memory 패키지의 RealRun을 실물 백엔드로 사용(권장 경로).
+        try:
+            return ModelHandle(cfg, backend="real-pkg", real_run=mod.RealRun(cfg, REAL_RT))
+        except Exception as e:  # noqa: BLE001
+            import sys
+            print(f"[model_adapter] 패키지 RealRun 실패 → 폴백: {e}", file=sys.stderr)
     if _real_backend_available():
         try:
             from .real import RealRun

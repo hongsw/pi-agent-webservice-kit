@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "growing-memory-pytorch"
+version = "0.1.0"
+description = "Growing-memory sequence model — chunked O(L) training, O(1) recurrent/streaming inference. AutoResearch + HuggingFace/Unsloth compatible."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "pi-agent-webservice-kit" }]
+keywords = ["linear-attention", "titans", "rnn", "long-context", "autoresearch", "unsloth"]
+dependencies = ["torch>=2.1"]
+
+[project.optional-dependencies]
+hf = ["transformers>=4.40"]      # HuggingFace/Unsloth 래퍼용
+dev = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/hongsw/pi-agent-webservice-kit"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["growing_memory*"]
