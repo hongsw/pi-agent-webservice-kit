@@ -37,6 +37,11 @@ VARIANTS = {
     "linear_ssc":      {"base_rule": "linear", "aggregation": "ssc", "top_k": 4},
     "titans_ssc":      {"base_rule": "titans", "aggregation": "ssc", "top_k": 4},
     "titans_real":     {"base_rule": "titans_real", "aggregation": "residual"},  # lucidrains 정확 Titans
+    "deltanet":        {"base_rule": "deltanet", "aggregation": "residual"},      # fla (vetted)
+    "gated_deltanet":  {"base_rule": "gated_deltanet", "aggregation": "residual"},
+    "retention":       {"base_rule": "retention", "aggregation": "residual"},
+    "gla":             {"base_rule": "gla", "aggregation": "residual"},
+    "linear_fla":      {"base_rule": "linear_fla", "aggregation": "residual"},
 }
 
 

@@ -107,13 +107,19 @@ class MemoryMixer(nn.Module):
         self.top_k = min(top_k, n_heads)
         self.decay_floor = 0.9 if segmentation == "logarithmic" else 0.0
 
-        # titans_real: 검증된 lucidrains titans-pytorch NeuralMemory를 믹서로 사용(정확 Titans)
-        self.real_mem = None
+        # 검증된 외부 구현(vetted)을 믹서로 사용 — fla(flash-linear-attention) + titans-pytorch.
+        # FLA_VALIDATION.md: deltanet/gated_deltanet/retention/titans = 1.0 회상.
+        self.ext_mem = None
         if base_rule == "titans_real":
             from titans_pytorch import NeuralMemory
-            # chunk_size는 seq_len보다 충분히 작아야 메모리가 시퀀스 내에서 여러 번 갱신됨
-            # (segment_len과 동일하게 두면 1청크가 되어 회상 붕괴 — 실측 0.31 vs 0.52).
-            self.real_mem = NeuralMemory(dim=d_model, chunk_size=min(32, segment_len))
+            self.ext_mem = NeuralMemory(dim=d_model, chunk_size=min(32, segment_len))
+        elif base_rule in ("linear_fla", "gla", "deltanet", "gated_deltanet", "retention"):
+            from fla.layers import (LinearAttention, GatedLinearAttention, DeltaNet,
+                                    GatedDeltaNet, MultiScaleRetention)
+            cls = {"linear_fla": LinearAttention, "gla": GatedLinearAttention,
+                   "deltanet": DeltaNet, "gated_deltanet": GatedDeltaNet,
+                   "retention": MultiScaleRetention}[base_rule]
+            self.ext_mem = cls(hidden_size=d_model, num_heads=n_heads)
 
         self.qkv = nn.Linear(d_model, 3 * d_model, bias=False)
         if base_rule in ("dla", "titans"):
@@ -136,8 +142,14 @@ class MemoryMixer(nn.Module):
         return t.view(B, L, self.h, self.dh).transpose(1, 2)  # [B,H,L,dh]
 
     def forward(self, x):
-        if self.real_mem is not None:                            # titans_real: lucidrains NeuralMemory
-            o = self.real_mem(x)
+        if self.ext_mem is not None:                             # vetted 외부 믹서(fla/titans)
+            if self.base_rule in ("linear_fla", "gla", "deltanet", "gated_deltanet", "retention"):
+                # fla triton 커널은 bf16 필요(deltanet은 fp32 미지원) → autocast 후 fp32 복귀
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    o = self.ext_mem(x)
+                o = o[0] if isinstance(o, tuple) else o
+                return o.float()
+            o = self.ext_mem(x)                                  # titans_real (fp32 OK)
             return o[0] if isinstance(o, tuple) else o           # [B,L,d] (aggregation 우회)
         B, L, _ = x.shape
         q, k, v = self.qkv(x).chunk(3, dim=-1)
@@ -371,11 +383,11 @@ class Block(nn.Module):
     def __init__(self, cfg, segment_len, top_k):
         super().__init__()
         d = cfg["d_model"]
-        self.n1 = RMSNorm(d)
+        self.n1 = nn.LayerNorm(d)                                 # 검증 스캐폴드(LayerNorm)
         self.mix = MemoryMixer(d, cfg["n_heads"], cfg["base_rule"],
                                cfg["aggregation"], cfg["segmentation"],
                                segment_len, top_k)
-        self.n2 = RMSNorm(d)
+        self.n2 = nn.LayerNorm(d)
         self.mlp = nn.Sequential(nn.Linear(d, 4 * d), nn.GELU(), nn.Linear(4 * d, d))
 
     def forward(self, x):
@@ -413,7 +425,7 @@ class GrowingMemoryModel(nn.Module):
         seg = cfg.get("segment_len", 128)
         top_k = cfg.get("top_k", 4)
         self.blocks = nn.ModuleList([Block(cfg, seg, top_k) for _ in range(cfg["n_layers"])])
-        self.norm = RMSNorm(d)
+        self.norm = nn.LayerNorm(d)                              # 검증 스캐폴드(LayerNorm)
         self.head = nn.Linear(d, vocab, bias=False)
         self.head.weight = self.front.emb.weight                 # weight tying
         self.apply(self._init)

@@ -22,7 +22,10 @@ class GateResult:
 
 
 # 설계상의 정합성 규칙(mock 게이트). 실물 패키지의 동치 테스트가 없을 때 사용.
-_VALID_BASE_RULE = {"linear", "swla", "dla", "titans"}
+_VALID_BASE_RULE = {"linear", "swla", "dla", "titans",
+                    # vetted 외부 구현(fla/titans) — FLA_VALIDATION.md
+                    "linear_fla", "gla", "deltanet", "gated_deltanet", "retention",
+                    "titans_real"}
 _VALID_AGG = {"residual", "grm", "soup", "ssc"}
 _VALID_SEG = {"constant", "logarithmic"}
 _VALID_INIT = {"checkpoint", "independent"}
