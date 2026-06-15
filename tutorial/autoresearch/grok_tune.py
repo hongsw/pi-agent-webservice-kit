@@ -46,7 +46,7 @@ def lr_at(step, total, base_lr, warmup):
     return 0.5 * base_lr * (1 + math.cos(math.pi * min(1.0, p)))
 
 
-def evaluate(model, rt, gen, n=6, hard=False):
+def evaluate(model, rt, gen, n=6, hard=False, chunked=False):
     model.eval()
     correct = total = 0
     with torch.no_grad():
@@ -55,7 +55,7 @@ def evaluate(model, rt, gen, n=6, hard=False):
             L = rt["seq_len"] + (rt["seq_len"] // 2 if hard else 0)
             inp, tgt, qm = make_mqar_batch(rt["batch"], L, pairs, rt["vocab"],
                                            rt["device"], gen)
-            logits = model(inp)
+            logits = model.forward_chunked(inp) if chunked else model(inp)
             if qm.any():
                 pred = logits.argmax(-1)
                 correct += (pred[qm] == tgt[qm]).sum().item()
@@ -89,7 +89,10 @@ def train_variant(name, vcfg, args, device):
         model.train()
         inp, tgt, _ = make_mqar_batch(args.batch, args.seq_len, args.pairs,
                                       args.vocab, device, tgen)
-        logits, aux = model(inp, return_aux=True)
+        if args.chunked:
+            logits, aux = model.forward_chunked(inp, return_aux=True)   # O(L) 학습
+        else:
+            logits, aux = model(inp, return_aux=True)
         loss = F.cross_entropy(logits.reshape(-1, args.vocab),
                                tgt.reshape(-1), ignore_index=-100) + aux
         opt.zero_grad(set_to_none=True)
@@ -98,14 +101,14 @@ def train_variant(name, vcfg, args, device):
         opt.step()
         if (step + 1) % args.eval_every == 0:
             egen.manual_seed(999)
-            r = evaluate(model, rt, egen)
+            r = evaluate(model, rt, egen, chunked=args.chunked)
             curve.append((step + 1, round(r, 3)))
             if grok_step is None and r > 0.5:
                 grok_step = step + 1
     egen.manual_seed(999)
-    final = evaluate(model, rt, egen)
+    final = evaluate(model, rt, egen, chunked=args.chunked)
     egen.manual_seed(777)
-    final_hard = evaluate(model, rt, egen, hard=True)
+    final_hard = evaluate(model, rt, egen, hard=True, chunked=args.chunked)
     return {"name": name, "final_recall": round(final, 3),
             "hard_recall": round(final_hard, 3), "grok_step": grok_step,
             "chance": round(chance, 3), "curve": curve,
@@ -127,6 +130,7 @@ def main(argv=None):
     ap.add_argument("--n-heads", dest="n_heads", type=int, default=0)
     ap.add_argument("--n-layers", dest="n_layers", type=int, default=0)
     ap.add_argument("--variants", default="all")
+    ap.add_argument("--chunked", action="store_true", help="O(L) chunked 학습/평가(긴 시퀀스)")
     args = ap.parse_args(argv)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 

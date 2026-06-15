@@ -426,15 +426,21 @@ class GrowingMemoryModel(nn.Module):
             return logits, self.front.aux_loss(e)
         return logits
 
-    def forward_chunked(self, x, chunk: int = 128):
-        """O(L) 청크 병렬 — 학습/prefill용. L×L 없이 청크별 계산(naive forward와 동치)."""
+    def forward_chunked(self, x, chunk: int = 128, return_aux: bool = False):
+        """O(L) 청크 병렬 — 학습/prefill용. L×L 없이 청크별 계산(naive forward와 동치).
+
+        autograd 호환(학습 가능). 긴 시퀀스를 OOM 없이 학습할 때 forward 대신 사용.
+        """
         e = self.front(x)
         if self.init_mode == "checkpoint":
             e = e + self.mem_init(e.mean(dim=1, keepdim=True))
         h = e
         for blk in self.blocks:
             h = blk.forward_chunked(h, chunk)
-        return self.head(self.norm(h))
+        logits = self.head(self.norm(h))
+        if return_aux:
+            return logits, self.front.aux_loss(e)
+        return logits
 
     @torch.no_grad()
     def forward_recurrent(self, x):
