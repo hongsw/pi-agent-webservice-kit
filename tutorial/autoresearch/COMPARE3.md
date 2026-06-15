@@ -29,7 +29,32 @@ naive == chunked == 재귀: 모두 같은 가중치, 출력 diff **~5e-7**(verif
 → 제대로 구현하면(chunked) 선형/Titans는 **학습 메모리는 트랜스포머와 동급 이상**,
    **추론 메모리는 압도적(상수, ~992×)**. 사용자가 지적한 OOM은 우리 naive 구현 버그였고 수정됨.
 
+## 연산(시간) — FlashAttention은 메모리만 선형, 연산은 여전히 O(L²)
+"FlashAttn도 선형인데 우리도 선형이면 의미 없지 않나?"에 대한 답. FlashAttention은 L×L를 HBM에
+materialize하지 않을 뿐 **연산량(FLOPs)은 O(L²) 그대로**다. 선형/chunked는 **연산도 O(L)**.
+
+forward 시간 vs L (4090, 동일 d256/h8/L4, batch1):
+
+| L | TF(flash) | 선형(chunk) | TF/Lin |
+|---|---|---|---|
+| 2048 | 2.0 ms | 14.9 ms | 0.14 |
+| 8192 | 14.9 ms | 55.0 ms | 0.27 |
+| 32768 | 174.5 ms | 213.6 ms | 0.82 |
+| 65536 | 660.8 ms | 426.5 ms | **1.55 (선형 승)** |
+| 131072 | 2577 ms | 865 ms | **2.98** |
+
+2×L 일 때 TF ~4×(=O(L²)), 선형 ~2×(=O(L)). 교차점 ~50K, 이후 격차 확대.
+
+| | 메모리 | 연산 |
+|---|---|---|
+| FlashAttention | O(L) | **O(L²)** |
+| 선형/chunked | O(L) | **O(L)** |
+
+→ 선형의 의미: ① 긴 컨텍스트 *연산* O(L)(실측 128K 3× 빠름), ② 추론 상태 O(1)(~992×),
+③ 추론 토큰당 O(1). FlashAttn이 못 주는 부분. 재현: `timebench.py`.
+
 ## 재현
 ```bash
-python3 tutorial/autoresearch/compare3.py   # → compare3_result.json
+python3 tutorial/autoresearch/compare3.py   # 메모리 → compare3_result.json
+python3 tutorial/autoresearch/timebench.py  # 시간 vs L
 ```
