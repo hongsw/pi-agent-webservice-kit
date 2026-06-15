@@ -53,8 +53,14 @@ forward 시간 vs L (4090, 동일 d256/h8/L4, batch1):
 → 선형의 의미: ① 긴 컨텍스트 *연산* O(L)(실측 128K 3× 빠름), ② 추론 상태 O(1)(~992×),
 ③ 추론 토큰당 O(1). FlashAttn이 못 주는 부분. 재현: `timebench.py`.
 
+## 검증된 알고리즘(fla deltanet)으로 재확인
+위 표는 from-scratch 선형. **검증된 fla DeltaNet vs 트랜스포머(flash)** 재측정(`efficiency_bench.py`,
+bf16): 131072에서 DeltaNet 31ms/1.15GB vs TF 244ms/1.17GB → **시간 7.8×(O(L) vs O(L²)), 메모리 동급**.
+효율 주장이 정확 구현으로 확정. 상세는 [report/REPORT.md](../../report/REPORT.md) §2.
+
 ## 재현
 ```bash
 python3 tutorial/autoresearch/compare3.py   # 메모리 → compare3_result.json
 python3 tutorial/autoresearch/timebench.py  # 시간 vs L
+~/gm_venv/bin/python packages/growing-memory/efficiency_bench.py  # deltanet vs flash(bf16)
 ```
