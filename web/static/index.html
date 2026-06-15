@@ -66,6 +66,15 @@
     <span class="muted" id="msg"></span>
   </div>
 
+  <h2>점수 차트 — 상위 trial (proxy · full)</h2>
+  <div class="card" style="overflow-x:auto">
+    <canvas id="chart" width="1100" height="260" style="max-width:100%;height:auto"></canvas>
+    <div style="margin-top:6px;font:12px var(--mono);color:var(--mut)">
+      <span style="color:var(--accent)">■</span> proxy &nbsp;
+      <span style="color:var(--good)">■</span> full &nbsp; (y: 0–1 recall/score)
+    </div>
+  </div>
+
   <h2>리더보드 (상위 trial)</h2>
   <table id="lbTable">
     <thead><tr>
@@ -102,6 +111,7 @@ async function refresh(){
 
     const d = await jget("/api/leaderboard?n=20");
     const rows = d.rows||[];
+    drawChart(rows.slice(0,12));
     $("#lbBody").innerHTML = rows.length ? rows.map((r,i)=>`
       <tr><td>${i+1}</td><td>${r.trial_id}</td>
       <td class="num">${fmt(r.proxy_score)}</td>
@@ -124,6 +134,30 @@ async function refresh(){
 }
 function cfgStr(c){ if(!c) return ""; const ssl=c.ssl?` ssl=${c.ssl.encoder}/${c.ssl.positive_pair}`:"";
   return `${c.base_rule}+${c.aggregation} seg=${c.segment_len} d=${c.d_model}L${c.n_layers}${ssl}`; }
+
+function drawChart(rows){
+  const cv=$("#chart"); if(!cv) return; const ctx=cv.getContext("2d");
+  const W=cv.width, H=cv.height, padL=38, padB=46, padT=12, padR=8;
+  ctx.clearRect(0,0,W,H);
+  const plotH=H-padB-padT, plotW=W-padL-padR, y0=padT+plotH;
+  // 축 + 그리드 (0,0.25,0.5,0.75,1.0)
+  ctx.strokeStyle="#283040"; ctx.fillStyle="#8b96a5"; ctx.font="11px monospace"; ctx.lineWidth=1;
+  for(let g=0; g<=4; g++){ const v=g/4, y=y0-v*plotH;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), 4, y+4); }
+  if(!rows.length){ ctx.fillText("데이터 없음 — 스윕을 시작하세요", padL+10, padT+plotH/2); return; }
+  const n=rows.length, slot=plotW/n, bw=Math.min(26, slot/2-3);
+  rows.forEach((r,i)=>{
+    const x=padL+i*slot+slot/2;
+    const p=Math.max(0,Math.min(1, r.proxy_score||0));
+    const f=Math.max(0,Math.min(1, r.full_score==null?0:r.full_score));
+    ctx.fillStyle="#4f8cff"; ctx.fillRect(x-bw-1, y0-p*plotH, bw, p*plotH);   // proxy
+    ctx.fillStyle="#3fb950"; ctx.fillRect(x+1,    y0-f*plotH, bw, f*plotH);   // full
+    ctx.save(); ctx.translate(x, y0+12); ctx.rotate(-Math.PI/6);
+    ctx.fillStyle="#8b96a5"; ctx.font="10px monospace"; ctx.textAlign="right";
+    ctx.fillText((r.cfg?r.cfg.base_rule:"")+"·"+r.trial_id, 0, 0); ctx.restore();
+  });
+}
 
 $("#btnSweep").onclick = async ()=>{
   $("#btnSweep").disabled=true; $("#msg").textContent="스윕 시작 중…";
