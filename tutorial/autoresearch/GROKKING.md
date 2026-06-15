@@ -24,6 +24,11 @@ grokking 가속 레버(Power et al.): weight decay · 충분한 스텝 · warmup
 `linear_residual`·`linear_soup`도 pairs=1에서는 **즉시 1.0**(step 1k). → 회상 자체는 학습 가능하며,
 막히는 것은 *다중키* 정확회상 용량이다. 천장은 "2키 중 1키만 안정 회상"(=0.5)으로 나타난다.
 
+### 긴 컨텍스트(seq=512, 16×)에서도 titans는 1.0 grok ⭐
+titans_residual을 seq=512(16× 긴 컨텍스트), dh=128, chunked, 25k 스텝으로 학습:
+**recall 1.0(hard 0.62), grok@15000** (step14k까지 0.33 정체 → 0.60→0.79→0.94→1.0 급점프).
+→ 긴 컨텍스트에서도 **완벽 회상 + 추론 O(1) 상수메모리** 동시 달성. 대가는 학습 컴퓨트(LONGSEQ.md).
+
 ## 시도한 레버와 효과
 | 레버 | 효과 |
 |---|---|
