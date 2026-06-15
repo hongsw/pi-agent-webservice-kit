@@ -36,6 +36,7 @@ VARIANTS = {
     "linear_soup":     {"base_rule": "linear", "aggregation": "soup"},
     "linear_ssc":      {"base_rule": "linear", "aggregation": "ssc", "top_k": 4},
     "titans_ssc":      {"base_rule": "titans", "aggregation": "ssc", "top_k": 4},
+    "titans_real":     {"base_rule": "titans_real", "aggregation": "residual"},  # lucidrains 정확 Titans
 }
 
 

@@ -107,6 +107,12 @@ class MemoryMixer(nn.Module):
         self.top_k = min(top_k, n_heads)
         self.decay_floor = 0.9 if segmentation == "logarithmic" else 0.0
 
+        # titans_real: 검증된 lucidrains titans-pytorch NeuralMemory를 믹서로 사용(정확 Titans)
+        self.real_mem = None
+        if base_rule == "titans_real":
+            from titans_pytorch import NeuralMemory
+            self.real_mem = NeuralMemory(dim=d_model, chunk_size=max(16, segment_len))
+
         self.qkv = nn.Linear(d_model, 3 * d_model, bias=False)
         if base_rule in ("dla", "titans"):
             self.decay = nn.Linear(d_model, n_heads)       # head별 스칼라 감쇠
@@ -128,6 +134,9 @@ class MemoryMixer(nn.Module):
         return t.view(B, L, self.h, self.dh).transpose(1, 2)  # [B,H,L,dh]
 
     def forward(self, x):
+        if self.real_mem is not None:                            # titans_real: lucidrains NeuralMemory
+            o = self.real_mem(x)
+            return o[0] if isinstance(o, tuple) else o           # [B,L,d] (aggregation 우회)
         B, L, _ = x.shape
         q, k, v = self.qkv(x).chunk(3, dim=-1)
         q, k, v = self._heads(q), self._heads(k), self._heads(v)  # [B,H,L,dh]

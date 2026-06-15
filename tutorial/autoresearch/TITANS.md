@@ -37,6 +37,21 @@ mem = neural_memory(dim=384, chunk_size=64)     # lucidrains NeuralMemory
 retrieved, state = mem(seq)                      # [B,L,d]
 ```
 
+## AutoResearch 통합 (base_rule="titans_real")
+검증된 lucidrains NeuralMemory를 노드의 믹서로 연결 — `real/model.py`의 MemoryMixer가
+`base_rule="titans_real"`이면 `titans_pytorch.NeuralMemory`를 사용(aggregation 우회).
+grok_tune VARIANTS에 `titans_real` 추가 → 스윕/학습에 진짜 Titans 포함.
+
+실측(4090, gm_venv):
+| 설정 | recall | 비고 |
+|---|---|---|
+| 교차검증 seq=64/pairs2 (easy) | **0.98** | grok@3000 |
+| AutoResearch 통합 seq=256/pairs4, 4k스텝 | **0.33** | 부분해(grok 전) — 더 긴 컨텍스트·키↑ |
+
+→ **통합 자체는 성공**(titans_real이 하니스에서 학습됨). 긴 컨텍스트 grok은 더 많은 스텝 필요
+(우리 titans가 seq=512에서 15k 걸린 것과 동일 패턴). lucidrains는 무겁다(~130ms/step, chunked의 ~4×).
+실행: `~/gm_venv/bin/python grok_tune.py --chunked --variants titans_real ...` (titans-pytorch 필요).
+
 ## 교훈
 사용자 지적("titans는 네가 만든 거냐?")이 정확했다. 이름은 Google 논문 차용, 자체 구현은
 근사/실패였다. "정확 구현을 하거나 검색하거나" 중 **검색·채택(lucidrains)이 정답**이었음.
