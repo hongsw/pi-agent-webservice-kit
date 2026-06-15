@@ -170,6 +170,62 @@ class MemoryMixer(nn.Module):
         o = self.hnorm(o)                                         # head별 정규화
         return self._aggregate(o, x)
 
+    def forward_chunked(self, x, chunk: int = 128):
+        """O(L) 청크 병렬 선형어텐션(표준 GLA) — L×L 행렬 없이 청크별 C×C + 상태 carry.
+
+        naive forward(O(L²))와 수학적 동치. 청크 내부는 작은 C×C로 계산하고, 청크 간에는
+        running state S,z를 이어받는다 → 메모리 O(L·C + dh²). swla는 해당 없음(forward 위임).
+        """
+        if not self.is_rnn:
+            return self.forward(x)
+        B, L, _ = x.shape
+        q, k, v = self.qkv(x).chunk(3, dim=-1)
+        q, k, v = self._heads(q), self._heads(k), self._heads(v)   # [B,H,L,dh]
+        qf, kf = F.elu(q) + 1.0, F.elu(k) + 1.0
+        if self.base_rule in ("dla", "titans"):
+            a = torch.sigmoid(self.decay(x)).transpose(1, 2)
+            a = self.decay_floor + (1.0 - self.decay_floor) * a    # [B,H,L]
+        else:
+            a = torch.ones(B, self.h, L, device=x.device, dtype=x.dtype)
+
+        S = torch.zeros(B, self.h, self.dh, self.dh, device=x.device, dtype=x.dtype)
+        z = torch.zeros(B, self.h, self.dh, device=x.device, dtype=x.dtype)
+        out = torch.empty(B, self.h, L, self.dh, device=x.device, dtype=x.dtype)
+        for c0 in range(0, L, chunk):
+            c1 = min(c0 + chunk, L)
+            qc, kc, vc = qf[:, :, c0:c1], kf[:, :, c0:c1], v[:, :, c0:c1]  # [B,H,C,dh]
+            ac = a[:, :, c0:c1]                                            # [B,H,C]
+            g = torch.cumprod(ac, dim=-1)                                  # g_i=∏_{0..i} a  [B,H,C]
+            C = c1 - c0
+            ratio = g[..., :, None] / g[..., None, :]                      # g_i/g_j [B,H,C,C]
+            idx = torch.arange(C, device=x.device)
+            causal = (idx[None, :] <= idx[:, None])[None, None]
+            ratio = torch.where(causal, ratio, torch.zeros_like(ratio))
+            sc_intra = (qc @ kc.transpose(-1, -2)) * ratio                 # [B,H,C,C]
+            o_intra = sc_intra @ vc                                        # [B,H,C,dh]
+            den_intra = sc_intra.sum(-1)                                   # [B,H,C]
+            # inter: carry S에서의 기여 (g_i 만큼 감쇠)
+            o_inter = g[..., :, None] * (qc @ S)                           # [B,H,C,dh]
+            den_inter = g * (qc * z[:, :, None, :]).sum(-1)                # [B,H,C]
+            den = (den_intra + den_inter).clamp_min(1e-6)[..., None]
+            out[:, :, c0:c1] = (o_intra + o_inter) / den
+            # carry 갱신(청크 끝까지 감쇠)
+            gC = g[..., -1]                                                # [B,H]
+            re = (gC[..., None] / g)                                       # gC/g_j [B,H,C]
+            kf_s = kc * re[..., None]                                      # [B,H,C,dh]
+            S = gC[..., None, None] * S + torch.einsum("bhcd,bhce->bhde", kf_s, vc)
+            z = gC[..., None] * z + kf_s.sum(2)
+
+        if self.base_rule == "titans":
+            scale = 1.0 / math.sqrt(self.dh)
+            pk = self.pk[None].expand(B, -1, -1, -1)
+            pv = self.pv[None].expand(B, -1, -1, -1)
+            ps = (q @ pk.transpose(-1, -2)) * scale
+            out = out + ps.softmax(dim=-1) @ pv
+
+        out = self.hnorm(out)
+        return self._aggregate(out, x)
+
     @property
     def is_rnn(self) -> bool:
         """O(1) 상태 재귀(RNN)로 추론 가능한 규칙? swla는 윈도우 bounded 캐시(예외)."""
@@ -321,6 +377,11 @@ class Block(nn.Module):
         x = x + self.mlp(self.n2(x))
         return x
 
+    def forward_chunked(self, x, chunk: int = 128):
+        x = x + self.mix.forward_chunked(self.n1(x), chunk)
+        x = x + self.mlp(self.n2(x))
+        return x
+
     def step(self, x_t, state: dict):
         o, state = self.mix.step(self.n1(x_t), state)
         x_t = x_t + o
@@ -364,6 +425,16 @@ class GrowingMemoryModel(nn.Module):
         if return_aux:
             return logits, self.front.aux_loss(e)
         return logits
+
+    def forward_chunked(self, x, chunk: int = 128):
+        """O(L) 청크 병렬 — 학습/prefill용. L×L 없이 청크별 계산(naive forward와 동치)."""
+        e = self.front(x)
+        if self.init_mode == "checkpoint":
+            e = e + self.mem_init(e.mean(dim=1, keepdim=True))
+        h = e
+        for blk in self.blocks:
+            h = blk.forward_chunked(h, chunk)
+        return self.head(self.norm(h))
 
     @torch.no_grad()
     def forward_recurrent(self, x):

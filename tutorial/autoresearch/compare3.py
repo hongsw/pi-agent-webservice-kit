@@ -125,22 +125,22 @@ def main():
     lin = build_real(cfg, VOCAB, max_len=maxL).to(DEV).eval()
     tf = Transformer(VOCAB, D, H, LAYERS, max_len=maxL).to(DEV).eval()
     print(f"device={DEV} d_model={D} heads={H} layers={LAYERS}")
-    print(f"{'L':>7} {'TF(full)':>10} {'Lin(par)':>10} {'Lin(rec)':>10} "
-          f"{'TF KVcache':>12} {'Rec state':>10}")
+    print(f"{'L':>7} {'TF(full)':>9} {'Lin(naive)':>11} {'Lin(chunk)':>11} {'Lin(rec)':>9} "
+          f"{'TF KVcache':>11} {'Rec state':>10}")
     rows = []
     for L in [512, 1024, 2048, 4096, 8192, 16384, 32768]:
         x = torch.randint(1, VOCAB, (1, L), device=DEV)
         with torch.no_grad():
             tf_full = run(lambda: tf(x))
-            lin_par = run(lambda: lin(x))
+            lin_naive = run(lambda: lin(x)) if L <= 8192 else "OOM*"   # naive O(L²)
+            lin_chunk = run(lambda: lin.forward_chunked(x))            # O(L)
             lin_rec = run(lambda: lin.forward_recurrent(x)) if L <= 8192 else "skip(t)"
-        row = {"L": L, "tf_full_mb": tf_full, "lin_parallel_mb": lin_par,
-               "lin_recurrent_mb": lin_rec,
-               "tf_kvcache_bytes": kv_cache_bytes(L),
-               "rec_state_bytes": lin.state_bytes(1)}
+        row = {"L": L, "tf_full_mb": tf_full, "lin_naive_mb": lin_naive,
+               "lin_chunked_mb": lin_chunk, "lin_recurrent_mb": lin_rec,
+               "tf_kvcache_bytes": kv_cache_bytes(L), "rec_state_bytes": lin.state_bytes(1)}
         rows.append(row)
-        print(f"{L:>7} {str(tf_full):>10} {str(lin_par):>10} {str(lin_rec):>10} "
-              f"{kv_cache_bytes(L)//1024:>10}KB {lin.state_bytes(1)//1024:>8}KB")
+        print(f"{L:>7} {str(tf_full):>9} {str(lin_naive):>11} {str(lin_chunk):>11} "
+              f"{str(lin_rec):>9} {kv_cache_bytes(L)//1024:>9}KB {lin.state_bytes(1)//1024:>8}KB")
     out = {"device": DEV, "dims": {"d": D, "h": H, "layers": LAYERS}, "scan": rows}
     open(os.path.join(os.path.dirname(__file__), "compare3_result.json"), "w").write(
         json.dumps(out, ensure_ascii=False, indent=2))

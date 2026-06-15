@@ -9,7 +9,8 @@
     {
       "L": 512,
       "tf_full_mb": 127.0,
-      "lin_parallel_mb": 156.2,
+      "lin_naive_mb": 156.2,
+      "lin_chunked_mb": 126.5,
       "lin_recurrent_mb": 125.5,
       "tf_kvcache_bytes": 4194304,
       "rec_state_bytes": 135168
@@ -17,7 +18,8 @@
     {
       "L": 1024,
       "tf_full_mb": 134.9,
-      "lin_parallel_mb": 260.8,
+      "lin_naive_mb": 260.8,
+      "lin_chunked_mb": 132.3,
       "lin_recurrent_mb": 131.8,
       "tf_kvcache_bytes": 8388608,
       "rec_state_bytes": 135168
@@ -25,7 +27,8 @@
     {
       "L": 2048,
       "tf_full_mb": 151.0,
-      "lin_parallel_mb": 673.4,
+      "lin_naive_mb": 673.4,
+      "lin_chunked_mb": 144.8,
       "lin_recurrent_mb": 144.8,
       "tf_kvcache_bytes": 16777216,
       "rec_state_bytes": 135168
@@ -33,7 +36,8 @@
     {
       "L": 4096,
       "tf_full_mb": 182.1,
-      "lin_parallel_mb": 2308.9,
+      "lin_naive_mb": 2308.9,
+      "lin_chunked_mb": 169.5,
       "lin_recurrent_mb": 169.5,
       "tf_kvcache_bytes": 33554432,
       "rec_state_bytes": 135168
@@ -41,7 +45,8 @@
     {
       "L": 8192,
       "tf_full_mb": 245.1,
-      "lin_parallel_mb": 8827.2,
+      "lin_naive_mb": 8827.2,
+      "lin_chunked_mb": 219.9,
       "lin_recurrent_mb": 219.9,
       "tf_kvcache_bytes": 67108864,
       "rec_state_bytes": 135168
@@ -49,7 +54,8 @@
     {
       "L": 16384,
       "tf_full_mb": 371.0,
-      "lin_parallel_mb": "OOM",
+      "lin_naive_mb": "OOM*",
+      "lin_chunked_mb": 320.6,
       "lin_recurrent_mb": "skip(t)",
       "tf_kvcache_bytes": 134217728,
       "rec_state_bytes": 135168
@@ -57,7 +63,8 @@
     {
       "L": 32768,
       "tf_full_mb": 622.8,
-      "lin_parallel_mb": "OOM",
+      "lin_naive_mb": "OOM*",
+      "lin_chunked_mb": 522.1,
       "lin_recurrent_mb": "skip(t)",
       "tf_kvcache_bytes": 268435456,
       "rec_state_bytes": 135168
