@@ -111,7 +111,9 @@ class MemoryMixer(nn.Module):
         self.real_mem = None
         if base_rule == "titans_real":
             from titans_pytorch import NeuralMemory
-            self.real_mem = NeuralMemory(dim=d_model, chunk_size=max(16, segment_len))
+            # chunk_size는 seq_len보다 충분히 작아야 메모리가 시퀀스 내에서 여러 번 갱신됨
+            # (segment_len과 동일하게 두면 1청크가 되어 회상 붕괴 — 실측 0.31 vs 0.52).
+            self.real_mem = NeuralMemory(dim=d_model, chunk_size=min(32, segment_len))
 
         self.qkv = nn.Linear(d_model, 3 * d_model, bias=False)
         if base_rule in ("dla", "titans"):

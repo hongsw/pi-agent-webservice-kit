@@ -42,14 +42,23 @@ retrieved, state = mem(seq)                      # [B,L,d]
 `base_rule="titans_real"`이면 `titans_pytorch.NeuralMemory`를 사용(aggregation 우회).
 grok_tune VARIANTS에 `titans_real` 추가 → 스윕/학습에 진짜 Titans 포함.
 
-실측(4090, gm_venv):
-| 설정 | recall | 비고 |
-|---|---|---|
-| 교차검증 seq=64/pairs2 (easy) | **0.98** | grok@3000 |
-| AutoResearch 통합 seq=256/pairs4, 4k스텝 | **0.33** | 부분해(grok 전) — 더 긴 컨텍스트·키↑ |
+### recall 차이의 진짜 원인 — 통합 버그(chunk_size), 난이도 아님 (정직 정정)
+처음엔 "통합 0.33 vs 교차검증 0.98"을 난이도 차이로 설명했으나 **틀렸다**. 변수 격리로 규명:
 
-→ **통합 자체는 성공**(titans_real이 하니스에서 학습됨). 긴 컨텍스트 grok은 더 많은 스텝 필요
-(우리 titans가 seq=512에서 15k 걸린 것과 동일 패턴). lucidrains는 무겁다(~130ms/step, chunked의 ~4×).
+1. **같은 쉬운 조건(seq=64/pairs2)인데 하니스만 바꿔도 0.98→0.32** → 난이도 아님, 스캐폴드/통합 문제.
+2. weight tying 해제 → 무효(0.31→0.31). 진짜 원인은 **lucidrains `chunk_size`**:
+
+| chunk_size (seq=64) | recall(3k) |
+|---|---|
+| 16 | 0.521 |
+| 32 | 0.520 |
+| **64 (내 통합 버그)** | **0.314** |
+
+내 통합이 `chunk_size=max(16, segment_len)=64`로 둬서 **seq=64면 전체가 1청크 → 메모리 갱신
+1회뿐 → 회상 붕괴**. **수정**: `chunk_size=min(32, segment_len)`(시퀀스 내 여러 번 갱신).
+수정 후 0.52(+ 더 학습 시 grok; 교차검증 스캐폴드는 chunk32에서 3k에 0.98 grok).
+
+→ 교훈: 통합 시 라이브러리 하이퍼파라미터(chunk_size)를 잘못 매핑하면 성능이 무너진다.
 실행: `~/gm_venv/bin/python grok_tune.py --chunked --variants titans_real ...` (titans-pytorch 필요).
 
 ## 교훈
