@@ -1,0 +1,30 @@
+/* 보고서 PDF 스타일 (pandoc HTML → Chrome print) */
+@page { size: A4; margin: 18mm 16mm; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: 11pt; line-height: 1.55; color: #1a1f29; max-width: 100%; margin: 0;
+}
+h1 { font-size: 20pt; border-bottom: 3px solid #4f8cff; padding-bottom: 6px; margin-top: 0; }
+h2 { font-size: 15pt; color: #243; border-bottom: 1px solid #d0d7e2; padding-bottom: 3px; margin-top: 22px;
+     page-break-after: avoid; }
+h3 { font-size: 12.5pt; color: #2a3a52; page-break-after: avoid; }
+p, li { font-size: 11pt; }
+code { background: #eef1f6; padding: 1px 5px; border-radius: 4px;
+       font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9.5pt; }
+pre { background: #0e1116; color: #e6edf3; padding: 12px 14px; border-radius: 8px; overflow-x: auto;
+      font-size: 9pt; line-height: 1.45; page-break-inside: avoid; }
+pre code { background: none; color: inherit; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.5pt;
+        page-break-inside: avoid; }
+th, td { border: 1px solid #c8d0dc; padding: 5px 9px; text-align: left; }
+th { background: #eef3fb; font-weight: 650; }
+tr:nth-child(even) td { background: #f7f9fc; }
+blockquote { border-left: 4px solid #4f8cff; background: #f3f7ff; margin: 12px 0; padding: 8px 14px;
+             color: #34405a; }
+img { max-width: 100%; height: auto; display: block; margin: 14px auto;
+      border: 1px solid #e0e6ef; border-radius: 6px; page-break-inside: avoid; }
+a { color: #2f6fd6; }
+hr { border: 0; border-top: 1px solid #d0d7e2; margin: 22px 0; }
+h1 { page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
