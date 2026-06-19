@@ -47,6 +47,35 @@ def load_json(rel):
 
 # 트랙 B S0b LIBERO baseline 실측 (있으면 보고서에 실수치 렌더)
 B_BASE = load_json("report/data/s0b_baseline_result.json")
+B_VIDS = load_json("report/data/s0b_videos.json")  # 녹화 rollout (8099에서 ../videos/ 서빙)
+
+
+def _videos_html():
+    if not B_VIDS:
+        return ('<div class=day><h3>🎬 rollout 영상 (없음)</h3>'
+                '<p class=muted>녹화된 영상 없음.</p></div>')
+    eps = [e for e in B_VIDS.get("episodes", []) if e.get("video")]
+    fails = [e for e in eps if not e["success"]]
+    succ = [e for e in eps if e["success"]]
+
+    def vid(e):
+        col = "#f85149" if not e["success"] else "#3fb950"
+        tag = "실패(220스텝 타임아웃=미완수)" if not e["success"] else "성공"
+        return (f'<div class=chartbox><h4 style="color:{col}">{"❌" if not e["success"] else "✅"} '
+                f'{e["task"][:40]} — {tag}</h4>'
+                f'<video controls preload=metadata width=256 style="width:100%;max-width:340px;border-radius:8px">'
+                f'<source src="../videos/{e["video"]}" type="video/mp4"></video>'
+                f'<div class=legend>{e["instr"]} · {e["steps"]}스텝 · jerk {(e.get("mean_jerk") or 0):.3f}</div></div>')
+    fh = "".join(vid(e) for e in fails) or '<p class=muted>이번 녹화 세트에 실패 에피소드 없음.</p>'
+    sh = "".join(vid(e) for e in succ[:3])
+    return f"""
+<div class=day><h3>🎬 실패 rollout 영상 ({len(fails)}건)</h3>
+ <p class=muted>OpenVLA가 그릇을 못 집고 220스텝까지 헛도는 모습 — MGPO(S1)가 줄여야 할 <b>실패/물리비효율 행동</b>이다.
+ 영상은 모델이 보는 시점(agentview, 180° 정렬). 8099 서버에서 재생됨.</p>
+ <div class=grid2>{fh}</div></div>
+<div class=day><h3>✅ 대비용 성공 rollout</h3>
+ <div class=grid2>{sh}</div></div>
+"""
 
 
 # ── 트랙 A: growing-memory / Titans 효율 연구 ─────────────────────────────────
@@ -293,6 +322,8 @@ def build(t):
         panels.append(("results", "핵심 결과"))
     if t["results"] == "RESULTS_B":
         panels.append(("results", "📊 결과·가설"))
+        if B_VIDS:
+            panels.append(("videos", "🎬 영상"))
     panels.append(("bridge", "🔗 연결"))
     panels.append(("honest", "정직한 정정"))
     panels.append(("commits", "커밋"))
@@ -303,6 +334,8 @@ def build(t):
         pdivs.append(f'<div class=panel id=p_results>{CHART_PANEL}</div>')
     elif t["results"] == "RESULTS_B":
         pdivs.append(f'<div class=panel id=p_results>{RESULTS_B.replace("__BASELINE__", _baseline_html())}</div>')
+        if B_VIDS:
+            pdivs.append(f'<div class=panel id=p_videos>{_videos_html()}</div>')
     pdivs.append('<div class=panel id=p_bridge></div>')
     pdivs.append('<div class=panel id=p_honest></div>')
     pdivs.append('<div class=panel id=p_commits></div>')

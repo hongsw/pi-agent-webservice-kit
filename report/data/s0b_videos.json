@@ -1,0 +1,180 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-spatial",
+  "suite": "libero_spatial",
+  "n_episodes": 15,
+  "success_rate": 0.8666666666666667,
+  "failure_rate": 0.1333333333333333,
+  "physics_proxy": {
+    "mean_jerk": 0.17203100688366604,
+    "mean_trans_norm": 0.6967263013182342,
+    "joint_limit_rate": 0.0014275282949981745
+  },
+  "wall_sec": 341.5,
+  "episodes": [
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 82,
+      "mean_jerk": 0.18957030645537157,
+      "mean_trans_norm": 0.7754472725820251,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t0_ep0_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 74,
+      "mean_jerk": 0.18935538783720504,
+      "mean_trans_norm": 0.80570514860714,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t0_ep1_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 81,
+      "mean_jerk": 0.22046050323406235,
+      "mean_trans_norm": 0.8649928667295126,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t0_ep2_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 0,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.10232614415812574,
+      "mean_trans_norm": 0.48485541078050365,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t1_ep0_FAIL.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 102,
+      "mean_jerk": 0.18436988914330113,
+      "mean_trans_norm": 0.7962704303026126,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t1_ep1_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 143,
+      "mean_jerk": 0.1577789070589704,
+      "mean_trans_norm": 0.6758215471685349,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t1_ep2_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 166,
+      "mean_jerk": 0.13210172197979056,
+      "mean_trans_norm": 0.4341104994864618,
+      "joint_limit_rate": 0.0025817555938037863,
+      "video": "libero_spatial_t2_ep0_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 148,
+      "mean_jerk": 0.1458104287929909,
+      "mean_trans_norm": 0.5082940150624946,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t2_ep1_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 112,
+      "mean_jerk": 0.18022232757344306,
+      "mean_trans_norm": 0.6259452279856694,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t2_ep2_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 91,
+      "mean_jerk": 0.17826447176436583,
+      "mean_trans_norm": 0.8040305085449511,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t3_ep0_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 96,
+      "mean_jerk": 0.1555223636427208,
+      "mean_trans_norm": 0.7185211481216053,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t3_ep1_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 82,
+      "mean_jerk": 0.18457890912476513,
+      "mean_trans_norm": 0.8386219305599608,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t3_ep2_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 131,
+      "mean_jerk": 0.17661834666505455,
+      "mean_trans_norm": 0.7417575255327836,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t4_ep0_SUCCESS.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 1,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.238072408369602,
+      "mean_trans_norm": 0.5771645469760353,
+      "joint_limit_rate": 0.01883116883116883,
+      "video": "libero_spatial_t4_ep1_FAIL.mp4"
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 134,
+      "mean_jerk": 0.1454129874552215,
+      "mean_trans_norm": 0.7993564413332227,
+      "joint_limit_rate": 0.0,
+      "video": "libero_spatial_t4_ep2_SUCCESS.mp4"
+    }
+  ]
+}

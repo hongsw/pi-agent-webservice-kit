@@ -23,7 +23,13 @@ ap.add_argument("--episodes", type=int, default=2)
 ap.add_argument("--max-steps", type=int, default=220)
 ap.add_argument("--wait", type=int, default=10)
 ap.add_argument("--out", default="/home/martin/dev/s0b_baseline_result.json")
+ap.add_argument("--record", action="store_true", help="에피소드를 MP4로 녹화")
+ap.add_argument("--video-dir", default="/home/martin/report-srv/videos")
+ap.add_argument("--record-fail-only", action="store_true", help="실패 에피소드만 저장")
 A = ap.parse_args()
+if A.record:
+    import imageio
+    os.makedirs(A.video_dir, exist_ok=True)
 MODEL = "openvla/openvla-7b-finetuned-" + A.suite.replace("_", "-")
 DUMMY = np.array([0, 0, 0, 0, 0, 0, -1], dtype=np.float32)
 
@@ -84,7 +90,10 @@ for ti in range(min(A.tasks, bm.n_tasks)):
         prev = None
         jerks, tnorms, jl = [], [], []
         steps = 0
+        frames = []
         for s in range(A.max_steps):
+            if A.record:
+                frames.append(np.ascontiguousarray(obs["agentview_image"][::-1, ::-1]))
             pil = prep(obs)
             prompt = f"In: What action should the robot take to {instr.lower()}?\nOut:"
             inp = proc(prompt, pil).to("cuda", dtype=torch.float16)
@@ -107,10 +116,20 @@ for ti in range(min(A.tasks, bm.n_tasks)):
                 succ = True
                 break
         env.close()
+        video = None
+        if A.record and frames and (succ is False or not A.record_fail_only):
+            if not (A.record_fail_only and succ):
+                video = f"{A.suite}_t{ti}_ep{ep}_{'SUCCESS' if succ else 'FAIL'}.mp4"
+                w = imageio.get_writer(os.path.join(A.video_dir, video), fps=20,
+                                       codec="libx264", quality=8, macro_block_size=1,
+                                       pixelformat="yuv420p")
+                for f in frames:
+                    w.append_data(f)
+                w.close()
         rec = dict(task=task.name, instr=instr, ep=ep, success=succ, steps=steps,
                    mean_jerk=float(np.mean(jerks)) if jerks else None,
                    mean_trans_norm=float(np.mean(tnorms)) if tnorms else None,
-                   joint_limit_rate=float(np.mean(jl)) if jl else None)
+                   joint_limit_rate=float(np.mean(jl)) if jl else None, video=video)
         results.append(rec)
         print(f"[{ti}.{ep}] {task.name[:42]} success={succ} steps={steps} "
               f"jerk={rec['mean_jerk']} jl={rec['joint_limit_rate']}", flush=True)
