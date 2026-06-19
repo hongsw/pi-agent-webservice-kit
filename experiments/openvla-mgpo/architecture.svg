@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="760" viewBox="0 0 1040 760" font-family="-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#4f6b8f"/>
+    </marker>
+    <style>
+      .b{rx:9; stroke:#c8d2e0; stroke-width:1.2}
+      .t{font-size:13px; fill:#1a2230} .s{font-size:11px; fill:#5a6b82}
+      .h{font-size:15px; font-weight:700; fill:#16324f}
+      .lbl{font-size:11px; fill:#4f6b8f} .ttl{font-size:20px; font-weight:700; fill:#16324f}
+      .ln{stroke:#4f6b8f; stroke-width:1.6; fill:none; marker-end:url(#a)}
+    </style>
+  </defs>
+
+  <rect width="1040" height="760" fill="#f7f9fc"/>
+  <text x="28" y="34" class="ttl">OpenVLA + Object-centric Temporal State Memory — 아키텍처</text>
+  <text x="28" y="54" class="s">두 오류축 분리: ① referential/object-permanence("그거") → 에이전트/메모리 · ② 물리(physics) → MGPO 검증보상 RL</text>
+
+  <!-- ===== Phase 1: Agent layer ===== -->
+  <rect x="22" y="74" width="660" height="664" fill="#eef4fb" stroke="#cdddf0" rx="12"/>
+  <text x="40" y="100" class="h">Phase 1 — 에이전트/외부 메모리 (1차, 빠른 검증)</text>
+  <text x="40" y="118" class="s">OpenVLA frozen = stateless executor · DeepAgent = stateful planner</text>
+
+  <!-- user -->
+  <rect class="b" x="40" y="134" width="280" height="40" fill="#ffffff"/>
+  <text x="54" y="159" class="t">User instruction  "그거를 던져라"</text>
+
+  <!-- DeepAgent planner box -->
+  <rect class="b" x="40" y="196" width="600" height="300" fill="#ffffff" stroke="#9ec0e6" stroke-width="2"/>
+  <text x="56" y="220" class="h" font-size="14">DeepAgent (stateful planner)</text>
+
+  <rect class="b" x="60" y="236" width="180" height="56" fill="#e9f2ec"/>
+  <text x="74" y="258" class="t">Perception Tool</text>
+  <text x="74" y="276" class="s">detect / track (Grounded-SAM,</text>
+  <text x="74" y="289" class="s">OWL-ViT, Detic, SAM + tracker)</text>
+
+  <rect class="b" x="260" y="236" width="170" height="56" fill="#e9f2ec"/>
+  <text x="274" y="258" class="t">Memory Tool</text>
+  <text x="274" y="276" class="s">object_state 저장/갱신</text>
+  <text x="274" y="289" class="s">obj_1=red ball, grasped</text>
+
+  <rect class="b" x="450" y="236" width="170" height="56" fill="#e9f2ec"/>
+  <text x="464" y="258" class="t">Resolver Tool</text>
+  <text x="464" y="276" class="s">"그거" → last_referred /</text>
+  <text x="464" y="289" class="s">gripper_contact_object</text>
+
+  <!-- Object Memory store -->
+  <rect class="b" x="60" y="312" width="560" height="86" fill="#fdf6e3"/>
+  <text x="74" y="334" class="t">ObjectMemory (slots)</text>
+  <text x="74" y="354" class="s">active_object_id · object_slots[{id,category,color,bbox,mask,pose_3d,held_by_gripper}]</text>
+  <text x="74" y="371" class="s">last_referred_object · gripper_contact_object · task_phase (GRASP→THROW)</text>
+  <text x="74" y="388" class="lbl">매 step: detect/track → id 갱신 → referent 추출 → "그거" resolve</text>
+
+  <!-- VLA Tool -->
+  <rect class="b" x="60" y="416" width="560" height="62" fill="#f0eafc"/>
+  <text x="74" y="438" class="t">VLA Tool — Task API → OpenVLA 호출</text>
+  <text x="74" y="457" class="s">{ task_name:"throw", object_id:"obj_1", object_label:"red ball", state:{grasped:true} }</text>
+  <text x="74" y="471" class="s">→ "throw the object currently held by the gripper" (자연어로 변환)</text>
+
+  <!-- OpenVLA executor -->
+  <rect class="b" x="40" y="520" width="600" height="92" fill="#ffffff" stroke="#b9b1d8" stroke-width="2"/>
+  <text x="56" y="544" class="h" font-size="14">OpenVLA-7b (frozen, fp16, stateless executor)</text>
+  <text x="56" y="566" class="s">입력: image(RGB) + 자연어 instruction</text>
+  <text x="56" y="584" class="s">DINOv2/SigLIP → MLP projector → LLaMA-2 7B → action head</text>
+  <text x="56" y="601" class="lbl">출력: 7-DoF action [x,y,z, roll,pitch,yaw, gripper]  (4090 실측 OK)</text>
+
+  <rect class="b" x="40" y="636" width="600" height="40" fill="#eaf6ee"/>
+  <text x="54" y="661" class="t">관찰 결과 → ObjectMemory 갱신 (closed loop)</text>
+
+  <!-- arrows phase1 -->
+  <path class="ln" d="M180,174 L180,196"/>
+  <path class="ln" d="M340,398 L340,416"/>
+  <path class="ln" d="M340,478 L340,520"/>
+  <path class="ln" d="M340,612 L340,636"/>
+  <path class="ln" d="M640,656 C700,656 700,360 660,360" stroke-dasharray="5 4"/>
+  <text x="678" y="500" class="lbl" transform="rotate(90 678 500)">feedback</text>
+
+  <!-- ===== Phase 2: in-model ===== -->
+  <rect x="700" y="74" width="320" height="664" fill="#f3eefb" stroke="#ddcdf0" rx="12"/>
+  <text x="718" y="100" class="h">Phase 2 — 모델 내장 (제품/엣지)</text>
+  <text x="718" y="118" class="s">object memory token · cross-attn projector · LoRA</text>
+
+  <g>
+    <rect class="b" x="724" y="138" width="270" height="34" fill="#ffffff"/><text x="738" y="160" class="t">RGB Image</text>
+    <rect class="b" x="724" y="186" width="270" height="34" fill="#ffffff"/><text x="738" y="208" class="t">DINOv2 / SigLIP</text>
+    <rect class="b" x="724" y="234" width="270" height="44" fill="#e9f2ec"/><text x="738" y="254" class="t">Object Grounding + Tracking</text><text x="738" y="270" class="s">object tokens</text>
+    <rect class="b" x="724" y="292" width="270" height="56" fill="#fdf6e3"/><text x="738" y="313" class="t">Object State Memory</text>
+    <text x="738" y="331" class="s">= growing-memory (deltanet/titans)</text><text x="738" y="343" class="lbl">O(1) 재귀 상태 · 엣지 상수메모리</text>
+    <rect class="b" x="724" y="362" width="270" height="44" fill="#e7eefb"/><text x="738" y="382" class="t">State-aware Projector</text><text x="738" y="398" class="s">cross-attn / memory tokens</text>
+    <rect class="b" x="724" y="420" width="270" height="34" fill="#ffffff"/><text x="738" y="442" class="t">LLaMA-2 VLA Backbone</text>
+    <rect class="b" x="724" y="468" width="270" height="44" fill="#f0eafc"/><text x="738" y="488" class="t">Action Head + Skill-state</text><text x="738" y="504" class="s">phase: GRASP→THROW</text>
+    <path class="ln" d="M859,172 L859,186"/><path class="ln" d="M859,220 L859,234"/>
+    <path class="ln" d="M859,278 L859,292"/><path class="ln" d="M859,348 L859,362"/>
+    <path class="ln" d="M859,406 L859,420"/><path class="ln" d="M859,454 L859,468"/>
+  </g>
+
+  <!-- physics axis note -->
+  <rect class="b" x="724" y="540" width="270" height="180" fill="#fff" stroke="#e0c7c7"/>
+  <text x="738" y="562" class="h" font-size="13" fill="#a33">② 물리 오류축 — MGPO RL</text>
+  <text x="738" y="583" class="s">verifiable reward = LIBERO success</text>
+  <text x="738" y="599" class="s">+ physics-validity(충돌/관절/드롭)</text>
+  <text x="738" y="619" class="s">MGPO: 고엔트로피(불확실) 우선,</text>
+  <text x="738" y="635" class="s">정답행동 증폭 + 다양성 유지</text>
+  <text x="738" y="657" class="s">LoRA fine-tune (OpenVLA-7b)</text>
+  <text x="738" y="679" class="lbl">compression-coverage →</text>
+  <text x="738" y="695" class="lbl">소형 코어로 압축(엣지학습노드)</text>
+</svg>
