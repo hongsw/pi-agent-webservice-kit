@@ -1,0 +1,515 @@
+{
+  "model": "openvla/openvla-7b-finetuned-libero-spatial",
+  "suite": "libero_spatial",
+  "n_episodes": 50,
+  "success_rate": 0.66,
+  "failure_rate": 0.33999999999999997,
+  "physics_proxy": {
+    "mean_jerk": 0.18623103437235386,
+    "mean_trans_norm": 0.6479481050535567,
+    "joint_limit_rate": 0.0017139727742137376
+  },
+  "wall_sec": 1314.5,
+  "episodes": [
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 82,
+      "mean_jerk": 0.18957030645537157,
+      "mean_trans_norm": 0.7754472725820251,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 74,
+      "mean_jerk": 0.18935538783720504,
+      "mean_trans_norm": 0.80570514860714,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 81,
+      "mean_jerk": 0.22046050323406235,
+      "mean_trans_norm": 0.8649928667295126,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 3,
+      "success": true,
+      "steps": 75,
+      "mean_jerk": 0.25940965687403,
+      "mean_trans_norm": 0.8507861412564913,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 105,
+      "mean_jerk": 0.18715446768552424,
+      "mean_trans_norm": 0.7083026789261826,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 0,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.10232614415812574,
+      "mean_trans_norm": 0.48485541078050365,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 102,
+      "mean_jerk": 0.18436988914330113,
+      "mean_trans_norm": 0.7962704303026126,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 143,
+      "mean_jerk": 0.1577789070589704,
+      "mean_trans_norm": 0.6758215471685349,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 3,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.11259439796821712,
+      "mean_trans_norm": 0.4286627545000308,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the ramekin and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 96,
+      "mean_jerk": 0.15936513094623622,
+      "mean_trans_norm": 0.7633896747720428,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 166,
+      "mean_jerk": 0.13210172197979056,
+      "mean_trans_norm": 0.4341104994864618,
+      "joint_limit_rate": 0.0025817555938037863
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 148,
+      "mean_jerk": 0.1458104287929909,
+      "mean_trans_norm": 0.5082940150624946,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 112,
+      "mean_jerk": 0.18022232757344306,
+      "mean_trans_norm": 0.6259452279856694,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 3,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.16652760498191668,
+      "mean_trans_norm": 0.39070723291952164,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl from table center and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 112,
+      "mean_jerk": 0.18435137077897518,
+      "mean_trans_norm": 0.6084020804430891,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 91,
+      "mean_jerk": 0.17826447176436583,
+      "mean_trans_norm": 0.8040305085449511,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 96,
+      "mean_jerk": 0.1555223636427208,
+      "mean_trans_norm": 0.7185211481216053,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 82,
+      "mean_jerk": 0.18457890912476513,
+      "mean_trans_norm": 0.8386219305599608,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 3,
+      "success": true,
+      "steps": 98,
+      "mean_jerk": 0.1733733934839976,
+      "mean_trans_norm": 0.761512460757275,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the cookie box and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 78,
+      "mean_jerk": 0.17677620395582605,
+      "mean_trans_norm": 0.8605623780152737,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 131,
+      "mean_jerk": 0.17661834666505455,
+      "mean_trans_norm": 0.7417575255327836,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 1,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.238072408369602,
+      "mean_trans_norm": 0.5771645469760353,
+      "joint_limit_rate": 0.01883116883116883
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 134,
+      "mean_jerk": 0.1454129874552215,
+      "mean_trans_norm": 0.7993564413332227,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 3,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.219781434369703,
+      "mean_trans_norm": 0.5956746257735756,
+      "joint_limit_rate": 0.06428571428571427
+    },
+    {
+      "task": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 134,
+      "mean_jerk": 0.1799973258608602,
+      "mean_trans_norm": 0.7926306090692976,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the ramekin and place it on the plate",
+      "ep": 0,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.2132170524694808,
+      "mean_trans_norm": 0.44167744677344506,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the ramekin and place it on the plate",
+      "ep": 1,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.22534465025600098,
+      "mean_trans_norm": 0.45171240113717925,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the ramekin and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 98,
+      "mean_jerk": 0.19565387696181377,
+      "mean_trans_norm": 0.7792277845116903,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the ramekin and place it on the plate",
+      "ep": 3,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.3031948942852687,
+      "mean_trans_norm": 0.6072097481757571,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the ramekin and place it on the plate",
+      "ep": 4,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.18908244154956108,
+      "mean_trans_norm": 0.43593549950640986,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the cookie box and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 111,
+      "mean_jerk": 0.15775332025844943,
+      "mean_trans_norm": 0.7274851190882761,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the cookie box and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 94,
+      "mean_jerk": 0.14110385052989968,
+      "mean_trans_norm": 0.7929994692887239,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the cookie box and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 100,
+      "mean_jerk": 0.1615212122825059,
+      "mean_trans_norm": 0.7949787232233212,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the cookie box and place it on the plate",
+      "ep": 3,
+      "success": true,
+      "steps": 98,
+      "mean_jerk": 0.17357944274686046,
+      "mean_trans_norm": 0.7777235060122473,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the cookie box and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 98,
+      "mean_jerk": 0.14506006071862487,
+      "mean_trans_norm": 0.7392790182826242,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the stove and place it on the plate",
+      "ep": 0,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.1623932919613847,
+      "mean_trans_norm": 0.3492293196687983,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the stove and place it on the plate",
+      "ep": 1,
+      "success": true,
+      "steps": 105,
+      "mean_jerk": 0.17438489224654263,
+      "mean_trans_norm": 0.7107683513801367,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the stove and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 130,
+      "mean_jerk": 0.14400450663655534,
+      "mean_trans_norm": 0.6749703900709462,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the stove and place it on the plate",
+      "ep": 3,
+      "success": true,
+      "steps": 201,
+      "mean_jerk": 0.1173491350596305,
+      "mean_trans_norm": 0.45092190099435286,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the stove and place it on the plate",
+      "ep": 4,
+      "success": true,
+      "steps": 127,
+      "mean_jerk": 0.18353193137232984,
+      "mean_trans_norm": 0.6748275609877635,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the plate and place it on the plate",
+      "ep": 0,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.28771849930898785,
+      "mean_trans_norm": 0.5441398419863122,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the plate and place it on the plate",
+      "ep": 1,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.3110846751348273,
+      "mean_trans_norm": 0.5434300526447425,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the plate and place it on the plate",
+      "ep": 2,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.006004788821401525,
+      "mean_trans_norm": 0.007182870555499738,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the plate and place it on the plate",
+      "ep": 3,
+      "success": true,
+      "steps": 113,
+      "mean_jerk": 0.23572894388676754,
+      "mean_trans_norm": 0.6468496005446444,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl next to the plate and place it on the plate",
+      "ep": 4,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.2844793974319856,
+      "mean_trans_norm": 0.512778127885593,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "ep": 0,
+      "success": true,
+      "steps": 128,
+      "mean_jerk": 0.19913710008456012,
+      "mean_trans_norm": 0.8600934623973444,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "ep": 1,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.17248526878429568,
+      "mean_trans_norm": 0.59128140472299,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "ep": 2,
+      "success": true,
+      "steps": 130,
+      "mean_jerk": 0.17499625378165595,
+      "mean_trans_norm": 0.7899005949174842,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "ep": 3,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.2935090474263429,
+      "mean_trans_norm": 0.6565431267319416,
+      "joint_limit_rate": 0.0
+    },
+    {
+      "task": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate",
+      "instr": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "ep": 4,
+      "success": false,
+      "steps": 220,
+      "mean_jerk": 0.2594370944616831,
+      "mean_trans_norm": 0.6247347749833186,
+      "joint_limit_rate": 0.0
+    }
+  ]
+}

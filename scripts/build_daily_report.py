@@ -35,6 +35,20 @@ def js(x):
     return json.dumps(x, ensure_ascii=False)
 
 
+def load_json(rel):
+    p = os.path.join(ROOT, rel)
+    if os.path.exists(p):
+        try:
+            return json.load(open(p, encoding="utf-8"))
+        except Exception:
+            return None
+    return None
+
+
+# 트랙 B S0b LIBERO baseline 실측 (있으면 보고서에 실수치 렌더)
+B_BASE = load_json("report/data/s0b_baseline_result.json")
+
+
 # ── 트랙 A: growing-memory / Titans 효율 연구 ─────────────────────────────────
 A_CHARTS = {
   "compute": {"L": [2048, 8192, 32768, 65536, 131072], "deltanet": [4.0, 3.8, 6.9, 14.8, 31.2],
@@ -72,7 +86,14 @@ B_MILE = {
                  ("S0 정책측 확인", "OpenVLA-7b fp16 4090 로드(7.54B, peak 15.1GB) + 7-DoF 행동예측 OK"),
                  ("object-memory 아키텍처 설계", "두 오류축 분리 · Phase1 DeepAgent / Phase2 growing-memory 내장 + SVG")],
 }
+if B_BASE:
+    B_MILE.setdefault("2026-06-19", []).append(
+        ("S0b LIBERO baseline 실측", f"{B_BASE['suite']} {B_BASE['n_episodes']}ep · 성공률 "
+         f"{B_BASE['success_rate']*100:.0f}% · 관절한계율 {(B_BASE['physics_proxy']['joint_limit_rate'] or 0)*100:.1f}% "
+         f"→ MGPO(S1)가 개선할 기준선"))
 B_COR = [
+  ("baseline 0% 나옴 → 모델이 나쁘다?", "아니오 — 그리퍼 부호 규약(OpenVLA↔LIBERO 반대) 누락 버그", "normalize+invert 추가 후 0%→66%"),
+  ("우리 66% = 논문 84%?", "다름 — 부분측정(50ep·5 init·우리 시드), 논문은 500ep", "'부분 기준선'으로 정직 표기, full-suite는 별도"),
   ("MGPO를 VLA에 쓰면 물리오류 준다?", "math/code에서만 입증 — VLA 전이는 미입증", "본 실험의 가설로 명시(H1), 사전등록"),
   ("projector만 키우면 referential 해결?", "기억은 projector 역할 아님", "object-level memory path를 별도 설계"),
 ]
@@ -115,20 +136,56 @@ TRACKS = {
     "other": ("track_a_growing_memory.html", "🔬 트랙 A — growing-memory"),
     "commits": [c for c in ALL_COMMITS if is_b(c["subj"])],
     "mile": B_MILE, "cor": B_COR, "charts": None,
-    "stats": lambda cm, dts: [
-      ("단계", "S0 완료", "정책측 확인 (다음 S0b LIBERO)"),
-      ("모델", "OpenVLA-7b", "7.54B params, fp16"),
-      ("로드", "15.1GB", "/ 24GB (4090, peak)"),
-      ("가설", "H1~H3", "물리오류↓ · 다양성 · 압축"),
+    "stats": lambda cm, dts: ([
+      ("단계", "S0b 완료" if B_BASE else "S0 완료", "LIBERO baseline 실측" if B_BASE else "정책측 확인"),
+      ("baseline 성공률", f"{B_BASE['success_rate']*100:.0f}%", f"{B_BASE['suite']} · {B_BASE['n_episodes']}ep")
+        if B_BASE else ("모델", "OpenVLA-7b", "7.54B params, fp16"),
+      ("baseline 실패율", f"{B_BASE['failure_rate']*100:.0f}%", "MGPO로 줄일 대상")
+        if B_BASE else ("로드", "15.1GB", "/ 24GB (4090, peak)"),
+      ("관절한계율", f"{(B_BASE['physics_proxy']['joint_limit_rate'] or 0)*100:.1f}%", "physics proxy")
+        if B_BASE else ("가설", "H1~H3", "물리오류↓ · 다양성 · 압축"),
       ("H1 합격선", "≥20%↓", "physics-error, success 비열화"),
       ("커밋", "{N}", "신규 트랙"),
-    ],
+    ]),
     "results": "RESULTS_B",  # 가설·설계 + 두 오류축 raw HTML
   },
 }
 
 # ── 트랙 B 전용 패널 HTML ─────────────────────────────────────────────────────
+def _baseline_html():
+    if not B_BASE:
+        return ('<div class=day><h3>📊 S0b — LIBERO baseline (측정 대기)</h3>'
+                '<p class=muted>아직 측정값 없음. 시뮬 rollout 완료 시 성공률·물리오류 proxy가 여기 실수치로 채워진다.</p></div>')
+    b = B_BASE
+    pp = b["physics_proxy"]
+    eps = b.get("episodes", [])
+    succ = sum(1 for e in eps if e.get("success"))
+    rows = "".join(
+        f'<tr><td>{e["task"][:34]}</td><td style="color:{"#3fb950" if e["success"] else "#f85149"}">'
+        f'{"성공" if e["success"] else "실패"}</td><td>{e["steps"]}</td>'
+        f'<td>{(e.get("mean_jerk") or 0):.3f}</td><td>{(e.get("joint_limit_rate") or 0)*100:.1f}%</td></tr>'
+        for e in eps)
+    jl = (pp.get("joint_limit_rate") or 0) * 100
+    return f"""
+<div class=day><h3>📊 S0b — LIBERO baseline 실측 (4090, {b['suite']}, {b['n_episodes']} episodes)</h3>
+ <p class=muted>verifiable reward(=task success) 신호와 physics-error proxy를 실제 시뮬 rollout으로 확립.
+ 이 수치가 MGPO(S1)가 개선해야 할 <b>기준선</b>이다.</p>
+ <div class=cards style="margin:10px 0">
+  <div class=card><div class=k>success rate</div><div class=v>{b['success_rate']*100:.0f}%</div><div class=s>{succ}/{b['n_episodes']} 성공</div></div>
+  <div class=card><div class=k>failure rate</div><div class=v style="color:#f85149">{b['failure_rate']*100:.0f}%</div><div class=s>MGPO 개선 대상</div></div>
+  <div class=card><div class=k>joint-limit rate</div><div class=v>{jl:.1f}%</div><div class=s>관절한계 근접(physics)</div></div>
+  <div class=card><div class=k>mean jerk</div><div class=v>{(pp.get('mean_jerk') or 0):.3f}</div><div class=s>행동 급변(physics)</div></div>
+ </div>
+ <table><thead><tr><th>task</th><th>결과</th><th>steps</th><th>jerk</th><th>관절한계율</th></tr></thead>
+ <tbody>{rows}</tbody></table>
+ <p class=muted style="margin-top:8px">측정시간 {b.get('wall_sec','?')}s · 주지표=success(H1 비열화 기준), physics proxy=joint-limit/jerk(H1 감소 대상).
+ 합격선: physics-error 상대 ≥20%↓ AND success ≥baseline−1%p.</p>
+</div>
+"""
+
+
 RESULTS_B = """
+__BASELINE__
 <div class=day><h3>🎯 핵심 가설 · 합격선 (사전등록, 데이터 보기 전 고정)</h3>
  <table><thead><tr><th>가설</th><th>내용</th><th>합격선(PASS)</th></tr></thead><tbody>
  <tr><td class=h>H1</td><td>MGPO(LoRA) RL → OpenVLA 물리오류 행동률 감소</td><td>physics-error 상대 ≥20%↓ AND success 비열화(≥baseline−1%p)</td></tr>
@@ -235,7 +292,7 @@ def build(t):
     if has_charts:
         panels.append(("results", "핵심 결과"))
     if t["results"] == "RESULTS_B":
-        panels.append(("results", "가설·설계"))
+        panels.append(("results", "📊 결과·가설"))
     panels.append(("bridge", "🔗 연결"))
     panels.append(("honest", "정직한 정정"))
     panels.append(("commits", "커밋"))
@@ -245,7 +302,7 @@ def build(t):
     if has_charts:
         pdivs.append(f'<div class=panel id=p_results>{CHART_PANEL}</div>')
     elif t["results"] == "RESULTS_B":
-        pdivs.append(f'<div class=panel id=p_results>{RESULTS_B}</div>')
+        pdivs.append(f'<div class=panel id=p_results>{RESULTS_B.replace("__BASELINE__", _baseline_html())}</div>')
     pdivs.append('<div class=panel id=p_bridge></div>')
     pdivs.append('<div class=panel id=p_honest></div>')
     pdivs.append('<div class=panel id=p_commits></div>')

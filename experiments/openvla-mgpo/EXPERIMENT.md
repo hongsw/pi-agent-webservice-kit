@@ -52,6 +52,19 @@
   (`s0_load_openvla.py`, unnorm_key=bridge_orig). 검증 루프의 *정책 측* 확립.
 - 다음(S0b): LIBERO 설치 → 시뮬 rollout으로 success/physics-error **baseline** 측정(*보상 측*).
 
+### S0b — LIBERO baseline 측정 (완료, 4090)
+- 환경: LIBERO + robosuite 1.4.1 + mujoco 3.9.0, EGL 헤드리스 렌더(MUJOCO_GL=egl). 모델
+  `openvla/openvla-7b-finetuned-libero-spatial` fp16. 하니스 `s0b_libero_baseline.py`.
+- **버그→수정(정직)**: 첫 런 성공률 0% → 원인은 그리퍼 부호 규약(OpenVLA는 0=close/1=open, LIBERO는
+  -1=open/+1=close) 누락. 공식 eval과 동일하게 `normalize_gripper_action(binarize)+invert` 추가 → 0%→66%.
+- **결과 (libero_spatial, 10 task × 5 ep = 50 episodes, max 220 step, ~22분)**:
+  - **success_rate = 0.66** (verifiable reward 신호 확립), failure_rate = 0.34
+  - physics proxy: **joint_limit_rate = 0.17%**(관절한계 근접), **mean_jerk = 0.186**(행동 급변), mean_trans_norm = 0.65
+- **정직 단서**: 66%는 논문 보고치(spatial ~84%)보다 낮음 — 부분측정(50ep·init-state 5개·우리 시드,
+  논문은 500ep)이라 분산이 큼. "부분 기준선"으로 사용. full-suite(10×50) 재측정은 별도.
+- 이 수치가 **S1 MGPO가 개선해야 할 기준선**: H1 = physics-error proxy(joint-limit/jerk) 상대 ≥20%↓
+  AND success ≥ 0.66−1%p.
+
 ## 정직 단서
 - MGPO는 검증가능 추론(math/code)에서 입증됨 — VLA 물리행동 전이는 **본 실험의 가설**(미입증).
 - 결과는 소형(LoRA)·단일GPU 범위; 대규모/실로봇 일반화는 별도.
