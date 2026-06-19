@@ -1,0 +1,57 @@
+# EXPERIMENT (사전등록) — MGPO + compression-coverage를 OpenVLA에 적용해 물리오류 행동 감소
+
+> 사전등록(open-research): *데이터를 보기 전에* 가설·지표·합격선을 고정한다. 사후에 합격선을 바꿔
+> PASS로 만들지 않는다. 합격선 없는 라운드는 INCONCLUSIVE.
+
+## 배경 / 참조
+- **OpenVLA**(로봇 조작 VLA): 행동을 **이산 토큰**으로 출력 → 자기회귀 토큰 정책.
+- **VibeThinker**(WeiboAI, arXiv 2511.06221): **MGPO**(MaxEnt-Guided Policy Optimization) — 정책이
+  가장 불확실한(고엔트로피) 문제를 우선해 on-policy 학습, 정답 신호 증폭 + 다양성 유지(mode-collapse 방지).
+  **Compression-Coverage 가설**: *verifiable* 능력은 parameter-dense → 소형 코어로 압축 가능.
+- **검증가능 보상**: LIBERO 조작 과제의 성공/실패(+물리타당) = verifiable reward → MGPO 전제 충족.
+
+## 핵심 가설
+1. **H1 (MGPO→물리오류↓)**: LIBERO 성공/물리타당을 verifiable reward로 MGPO(LoRA) RL하면, OpenVLA의
+   *물리오류 행동률*이 baseline 대비 **유의하게 감소**한다.
+2. **H2 (다양성 유지)**: MGPO는 다양성을 유지해(엔트로피), 단순 RL(mode-collapse) 대비 미지 과제 일반화가
+   낫다.
+3. **H3 (compression-coverage)**: 물리정합성은 parameter-dense → MGPO로 얻은 정책을 **소형 코어**(LoRA/
+   소형 VLA)로 압축해도 물리오류 감소가 대부분 유지된다(엣지 배포 가능).
+
+## 설계
+- 환경/보상: **LIBERO**(OpenVLA 표준). reward = task success(이진) + (가능시) 물리타당 패널티.
+- 정책: **OpenVLA-7b** + **LoRA**(단일 4090 24GB 제약). 토큰 정책 → MGPO 직접 적용.
+- 방법: S0 baseline → S1 MGPO LoRA → S2 compression(소형 코어) → S3 autoresearch config 스윕.
+
+## 지표
+- **success rate**(주지표, ↑), **physics-error rate**(물리위반/실패행동률, ↓; LIBERO 실패+충돌/관절한계 proxy),
+- 출력 **엔트로피/다양성**(다양성 유지 점검), 미지 과제 일반화 gap.
+
+## 합격선 (사전 고정)
+- **H1 PASS**: physics-error rate가 baseline 대비 **상대 ≥20% 감소** AND success rate 비열화(≥ baseline−1%p),
+  동일 LIBERO 스위트/시드에서.
+- **H2 PASS**: 출력 엔트로피가 단순 RL 대비 높음 + 미지 과제 success 우위.
+- **H3 PASS**: 압축 코어가 H1 감소폭의 **≥80% 유지**, 추론 메모리 O(1)/소형.
+- 합격선 미정/미측정 → INCONCLUSIVE.
+
+## 자원 / 실현성
+- 1× RTX 4090 24GB(OpenVLA-7b 가중치 캐시됨). **fp16 로드(≈14GB)**. full RL 불가 → **LoRA + 시뮬 rollout**.
+- LIBERO/robosuite/mujoco 설치 필요(S0). multi-day 연구 프로그램.
+
+## 단계
+- **S0(현재)**: OpenVLA-7b 로드·행동예측 확인 + LIBERO baseline(success/physics-error) 측정 → verifiable 신호 확립.
+- **S1**: MGPO LoRA RL → H1/H2 검증.
+- **S2**: compression-coverage → H3.
+- **S3**: autoresearch 노드에 MGPO config 스윕(보상=success) 연결 + 엣지 배포.
+
+## 진행 로그
+### S0a — 정책 측 확인 (완료, 4090)
+- 환경: 전용 venv `~/openvla_venv` (transformers==4.40.1, timm==0.9.10, accelerate; torch 2.10/cu128).
+  gm_venv(transformers 5.12)는 OpenVLA 원격코드와 비호환(`AutoModelForVision2Seq` 제거됨) → 전용 venv 필요.
+- 결과: **OpenVLA-7b fp16 로드 성공 (7.54B params, peak 15.1GB / 24GB), `predict_action` → 7-DoF action 출력 OK**
+  (`s0_load_openvla.py`, unnorm_key=bridge_orig). 검증 루프의 *정책 측* 확립.
+- 다음(S0b): LIBERO 설치 → 시뮬 rollout으로 success/physics-error **baseline** 측정(*보상 측*).
+
+## 정직 단서
+- MGPO는 검증가능 추론(math/code)에서 입증됨 — VLA 물리행동 전이는 **본 실험의 가설**(미입증).
+- 결과는 소형(LoRA)·단일GPU 범위; 대규모/실로봇 일반화는 별도.
