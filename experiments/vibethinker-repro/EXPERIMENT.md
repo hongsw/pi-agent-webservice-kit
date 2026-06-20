@@ -61,4 +61,13 @@
 
 ## 진행 로그
 ### S0 — 착수
-- 가중치 `WeiboAI/VibeThinker-3B` 다운로드(gm_venv, transformers 5.12). R1 대기(GPU 경합 시 free 후 실행).
+- 가중치 `WeiboAI/VibeThinker-3B` 다운로드(gm_venv, transformers 5.12).
+
+### R1 — 로드·단일문항 추론 (PASS, 4090)
+- **GPU 경합**: 타 사용자(imshen19)가 OpenVLA 학습으로 17GB 점유 → 여유 6.9GB. bf16(~6.5GB+KV)이 안 들어가
+  **8-bit 양자화로 sanity** 실행(재현 수치 아님, 파이프라인+추론력 확인용).
+- **결과**: AIME 2024-I-1(정답 204)을 **정확히 해결**. 단계적 사고연쇄 후 `\boxed{204}` 생성, correct=True.
+  생성 2225토큰, 8-bit 7.3 tok/s(303s, 느림 — 양자화 영향).
+- **판정**: **R1 PASS** — 모델 로드+추론+정답추출 파이프라인 검증, VibeThinker 추론력 실측 확인.
+- **다음(S1)**: bf16 정식 설정(temp=1.0, top_p=0.95)으로 AIME25 30문항 pass@1 → claim 91.4(CLR미적용) 대비.
+  GPU 17GB 여유 시 실행(현재 큐잉). 8-bit는 느리고 정확도 영향 있어 벤치는 bf16로.

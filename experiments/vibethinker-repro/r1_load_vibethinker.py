@@ -11,6 +11,7 @@ ap.add_argument("--model", default="WeiboAI/VibeThinker-3B")
 ap.add_argument("--max-new", type=int, default=8192)
 ap.add_argument("--temperature", type=float, default=1.0)
 ap.add_argument("--top-p", type=float, default=0.95)
+ap.add_argument("--load-8bit", action="store_true", help="8-bit 양자화 로드(저메모리 sanity, 재현수치 아님)")
 A = ap.parse_args()
 
 # 정답이 알려진 AIME 2024 I 문제 1 (정답 = 204). R1 sanity용.
@@ -22,10 +23,15 @@ PROBLEM = ("Every morning Aya goes for a 9-kilometer-long walk and stops at a co
            "including the t minutes spent in the coffee shop.")
 GOLD = 204
 
-print("loading", A.model, flush=True)
+print("loading", A.model, "8bit" if A.load_8bit else "bf16", flush=True)
 tok = AutoTokenizer.from_pretrained(A.model, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(
-    A.model, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map="cuda").eval()
+kw = dict(trust_remote_code=True)
+if A.load_8bit:
+    from transformers import BitsAndBytesConfig
+    kw.update(quantization_config=BitsAndBytesConfig(load_in_8bit=True), device_map="cuda")
+else:
+    kw.update(torch_dtype=torch.bfloat16, device_map="cuda")
+model = AutoModelForCausalLM.from_pretrained(A.model, **kw).eval()
 nparam = sum(p.numel() for p in model.parameters())
 print(f"model loaded: {nparam/1e9:.2f}B params", flush=True)
 
