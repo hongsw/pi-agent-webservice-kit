@@ -65,6 +65,33 @@
 - 이 수치가 **S1 MGPO가 개선해야 할 기준선**: H1 = physics-error proxy(joint-limit/jerk) 상대 ≥20%↓
   AND success ≥ 0.66−1%p.
 
+### S0b 정성 분석 — 어떤 태스크가 왜 실패했나 (실패 영상 프레임 직접 확인)
+태스크별 성공률 (libero_spatial, 10 task × 5 ep):
+
+| 난이도 | task | 성공 | 평균 step | jerk | 관절한계율 |
+|---|---|---|---|---|---|
+| 어려움 | next_to_the_plate | 1/5 | 199 | 0.225 | 0% |
+| 어려움 | on_the_ramekin | 1/5 | 196 | 0.225 | 0% |
+| 어려움 | on_the_wooden_cabinet | 2/5 | 184 | 0.220 | 0% |
+| 보통 | in_the_top_drawer | 3/5 | 168 | 0.192 | 1.66% |
+| 보통 | next_to_the_ramekin | 3/5 | 156 | 0.143 | 0% |
+| 보통 | from_table_center | 4/5 | 152 | 0.162 | 0.05% |
+| 보통 | on_the_stove | 4/5 | 157 | 0.156 | 0% |
+| 쉬움 | between_the_plate_and_the_ramekin | 5/5 | 83 | 0.209 | 0% |
+| 쉬움 | next_to_the_cookie_box | 5/5 | 100 | 0.156 | 0% |
+| 쉬움 | on_the_cookie_box | 5/5 | 89 | 0.174 | 0% |
+
+**관찰 (정성)**:
+1. **실패의 본질 = 물리 난폭함이 아니라 공간 그라운딩 실패.** 실패 에피소드도 jerk(0.10~0.24)·관절한계율
+   (~0%)이 정상. 팔이 거칠어서가 아니라 **엉뚱한 위치로 가 그릇을 못 집고 220스텝을 헛돈다**(얌전한 실패).
+2. **어려운 태스크 = 참조 표현이 모호/타겟이 가려짐.** 최악 3개(next_to_the_plate, on_the_ramekin,
+   on_the_wooden_cabinet)는 같은 검은 그릇이 여러 개라 *어느 그릇인지(참조 해소)*가 핵심. 쉬운 것은 위치가 명확.
+3. **관측 실패 모드**: 팔이 타겟이 아닌 테이블 좌·중앙으로 표류 → 그리퍼를 연 채 낮게 떠 정지 → 그랩 미시도.
+   (프레임 증거: report-srv `/frames/`의 t1_ep0_FAIL, t4_ep1_FAIL 시작/중반/종료)
+4. **실험 함의**: baseline 실패가 physics proxy로 거의 설명되지 않음 → MGPO **물리보상의 개선 여지가 제한적**일 수
+   있고, ARCHITECTURE.md ① referential/grounding 축(에이전트·object-memory)이 성공률에 더 직접적. H1 검증 시
+   physics-error 감소와 **success 변화**를 반드시 함께 보고, grounding 축 개입(Phase 1)도 비교군에 포함한다.
+
 ## 정직 단서
 - MGPO는 검증가능 추론(math/code)에서 입증됨 — VLA 물리행동 전이는 **본 실험의 가설**(미입증).
 - 결과는 소형(LoRA)·단일GPU 범위; 대규모/실로봇 일반화는 별도.

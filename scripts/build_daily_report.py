@@ -50,6 +50,76 @@ B_BASE = load_json("report/data/s0b_baseline_result.json")
 B_VIDS = load_json("report/data/s0b_videos.json")  # 녹화 rollout (8099에서 ../videos/ 서빙)
 
 
+def _per_task_rows():
+    if not B_BASE:
+        return []
+    from collections import defaultdict
+    agg = defaultdict(lambda: {"n": 0, "s": 0, "steps": [], "jerk": [], "jl": []})
+    for e in B_BASE["episodes"]:
+        a = agg[e["task"]]
+        a["n"] += 1
+        a["s"] += 1 if e["success"] else 0
+        a["steps"].append(e["steps"])
+        a["jerk"].append(e.get("mean_jerk") or 0)
+        a["jl"].append((e.get("joint_limit_rate") or 0) * 100)
+    rows = []
+    for t, a in agg.items():
+        rows.append((a["s"] / a["n"], t, a["s"], a["n"], sum(a["steps"]) / a["n"],
+                     sum(a["jerk"]) / a["n"], sum(a["jl"]) / a["n"]))
+    return sorted(rows)
+
+
+# 정성 관찰 (실패 영상 프레임을 직접 확인해 기록)
+B_QUAL_FINDINGS = [
+  ("실패의 본질 = 물리 난폭함이 아니라 '공간 그라운딩 실패'",
+   "실패 에피소드도 jerk(0.10~0.24)·관절한계율(~0%)이 정상 범위. 즉 팔이 거칠게 움직여 실패한 게 아니라, "
+   "<b>엉뚱한 위치로 가서 그릇을 못 집고 220스텝을 헛돈다</b>. 물리적으로는 '얌전한' 실패."),
+  ("어려운 태스크 = 참조 표현이 모호하거나 타겟이 가려진 경우",
+   "최악: 'next_to_the_plate'(1/5), 'on_the_ramekin'(1/5), 'on_the_wooden_cabinet'(2/5), "
+   "'in_the_top_drawer'(3/5). 공통점 = 같은 검은 그릇이 여러 개라 <b>어느 그릇인지(참조 해소)</b>가 핵심. "
+   "쉬움: 'between_the_plate_and_the_ramekin'(5/5), 'on_the_cookie_box'(5/5) — 위치가 비교적 명확."),
+  ("관측된 실패 모드: 좌측/중앙으로 표류 후 정지",
+   "두 실패 영상 모두 팔이 타겟 그릇이 아닌 테이블 좌·중앙으로 이동, 그리퍼를 연 채 낮게 떠서 멈춤. "
+   "그랩 시도 자체가 일어나지 않거나 빈 곳을 집는다."),
+  ("실험 함의: physics축보다 referential/grounding축이 더 큰 레버",
+   "baseline 실패가 물리비효율(jerk/관절한계)로 거의 설명되지 않음 → MGPO 물리보상의 <b>개선 여지(headroom)가 제한적</b>일 수 있음. "
+   "ARCHITECTURE.md의 ① referential 축(에이전트/object-memory)이 성공률에 더 직접적. H1 검증 시 이 점을 반드시 같이 본다."),
+]
+B_FAIL_FRAMES = [
+  ("pick_up_the_black_bowl_next_to_the_ramekin (실패)",
+   ["libero_spatial_t1_ep0_FAIL_0_0.png", "libero_spatial_t1_ep0_FAIL_2_154.png", "libero_spatial_t1_ep0_FAIL_3_219.png"],
+   "시작엔 그릇들이 보이지만, 팔이 좌측으로 표류해 엉뚱한 그릇 근처에서 그리퍼를 연 채 정지 → 미완수."),
+  ("pick_up_the_black_bowl_in_the_top_drawer (실패)",
+   ["libero_spatial_t4_ep1_FAIL_0_0.png", "libero_spatial_t4_ep1_FAIL_2_154.png", "libero_spatial_t4_ep1_FAIL_3_219.png"],
+   "타겟(우측 캐비닛/서랍)으로 가지 않고 좌측 빈 테이블로 내려가 낮게 떠서 멈춤 → 서랍 접근/그랩 없음."),
+]
+
+
+def _qual_html():
+    rows = _per_task_rows()
+    if not rows:
+        return '<div class=day><h3>🔬 정성 분석 (대기)</h3><p class=muted>baseline 필요.</p></div>'
+    tr = "".join(
+        f'<tr><td>{t[:46]}</td><td style="color:{"#3fb950" if sr>=0.8 else ("#d29922" if sr>=0.5 else "#f85149")}">'
+        f'{s}/{n} ({sr*100:.0f}%)</td><td>{ms:.0f}</td><td>{jk:.3f}</td><td>{jl:.2f}%</td></tr>'
+        for sr, t, s, n, ms, jk, jl in rows)
+    finds = "".join(f'<div class=mi><b>{a}</b><span>{b}</span></div>' for a, b in B_QUAL_FINDINGS)
+    strips = ""
+    for title, imgs, cap in B_FAIL_FRAMES:
+        thumbs = "".join(f'<img src="../frames/{im}" style="width:31%;border-radius:6px;border:1px solid #283040">' for im in imgs)
+        strips += (f'<div class=chartbox><h4 style="color:#f85149">❌ {title}</h4>'
+                   f'<div style="display:flex;gap:2%">{thumbs}</div>'
+                   f'<div class=legend>시작 → 중반 → 종료(220스텝). {cap}</div></div>')
+    return f"""
+<div class=day><h3>🔬 태스크별 성공률 (libero_spatial, 50ep)</h3>
+ <table><thead><tr><th>task</th><th>성공</th><th>평균steps</th><th>jerk</th><th>관절한계율</th></tr></thead>
+ <tbody>{tr}</tbody></table>
+ <p class=muted style="margin-top:8px">성공한 태스크는 평균 ~85스텝에 끝나고, 실패는 220(최대)까지 감 — 실패=완수 못 함.</p></div>
+<div class=day><h3>🧭 정성 관찰 — 무엇이 잘못됐나</h3>{finds}</div>
+<div class=day><h3>🖼️ 실패 프레임 (영상에서 직접 확인)</h3><div class=grid2>{strips}</div></div>
+"""
+
+
 def _videos_html():
     if not B_VIDS:
         return ('<div class=day><h3>🎬 rollout 영상 (없음)</h3>'
@@ -322,6 +392,8 @@ def build(t):
         panels.append(("results", "핵심 결과"))
     if t["results"] == "RESULTS_B":
         panels.append(("results", "📊 결과·가설"))
+        if B_BASE:
+            panels.append(("qual", "🔬 정성 분석"))
         if B_VIDS:
             panels.append(("videos", "🎬 영상"))
     panels.append(("bridge", "🔗 연결"))
@@ -334,6 +406,8 @@ def build(t):
         pdivs.append(f'<div class=panel id=p_results>{CHART_PANEL}</div>')
     elif t["results"] == "RESULTS_B":
         pdivs.append(f'<div class=panel id=p_results>{RESULTS_B.replace("__BASELINE__", _baseline_html())}</div>')
+        if B_BASE:
+            pdivs.append(f'<div class=panel id=p_qual>{_qual_html()}</div>')
         if B_VIDS:
             pdivs.append(f'<div class=panel id=p_videos>{_videos_html()}</div>')
     pdivs.append('<div class=panel id=p_bridge></div>')
