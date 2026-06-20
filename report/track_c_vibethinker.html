@@ -1,0 +1,97 @@
+<!DOCTYPE html><html lang=ko><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1"><title>트랙 C — VibeThinker-3B 재현</title>
+<style>
+:root{--bg:#0e1116;--pan:#161b22;--ln:#283040;--ink:#e6edf3;--mut:#8b96a5;--acc:#4f8cff;--good:#3fb950;--warn:#d29922;--bad:#f85149;--mono:"SF Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+header{padding:22px 26px;border-bottom:1px solid var(--ln);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{margin:0;font-size:21px}.tag{color:var(--mut);font-size:12.5px;margin-top:4px}.sub{color:var(--mut);font:12px var(--mono);margin-top:6px}
+.xlink{flex:none;background:var(--pan);border:1px solid var(--ln);border-radius:8px;padding:8px 13px;color:var(--acc);text-decoration:none;font-size:12.5px}
+.xlink:hover{border-color:var(--acc)}
+main{max-width:1180px;margin:0 auto;padding:22px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--pan);border:1px solid var(--ln);border-radius:12px;padding:15px}
+.card .k{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.card .v{font-size:23px;font-weight:700;margin-top:5px;color:var(--acc)}.card .s{color:var(--mut);font:11px var(--mono);margin-top:3px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:8px 15px;border:1px solid var(--ln);border-radius:8px;cursor:pointer;color:var(--mut);font-size:13px;background:transparent}
+.tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.panel{display:none}.panel.on{display:block}
+.day{background:var(--pan);border:1px solid var(--ln);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.day h3{margin:0 0 10px;font-size:15px;color:var(--acc)}
+.mi{border-left:3px solid var(--good);padding:6px 0 6px 12px;margin:8px 0}
+.mi b{font-size:13.5px}.mi span{display:block;color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;background:var(--pan);border:1px solid var(--ln);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--ln);font-size:12.5px;vertical-align:top}
+th{color:var(--mut);font-size:11px;text-transform:uppercase}tr:last-child td{border-bottom:0}
+td.h{font:12px var(--mono);color:var(--acc)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.chartbox{background:var(--pan);border:1px solid var(--ln);border-radius:12px;padding:14px}
+.chartbox h4{margin:0 0 8px;font-size:13px;color:var(--ink)}canvas{width:100%;height:auto}
+.cor{background:var(--pan);border:1px solid var(--ln);border-left:3px solid var(--warn);border-radius:8px;padding:11px 14px;margin-bottom:10px}
+.cor .q{color:var(--warn);font-weight:600;font-size:13px}.cor .a{color:var(--mut);font-size:12.5px}.cor .f{color:var(--good);font-size:12.5px}
+.muted{color:var(--mut)}.legend{font:11px var(--mono);color:var(--mut);margin-top:6px}
+</style></head><body>
+<header><div><h1>🧮 트랙 C — VibeThinker-3B 재현</h1><div class=tag>소형 추론모델 재현 후 개선 (Qwen2.5-Coder-3B 기반, MGPO/SSP)</div><div class=sub id=meta></div></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><a class=xlink href="track_a_growing_memory.html">↔ 🔬 트랙 A</a><a class=xlink href="track_b_openvla_mgpo.html">↔ 🤖 트랙 B</a></div></header>
+<main>
+ <div class=cards id=cards></div>
+ <div class=tabs id=tabs></div>
+ <div class=panel id=p_timeline></div><div class=panel id=p_results>
+<div class=day><h3>🎯 검증 대상 주장 (공개 수치)</h3>
+ <table><thead><tr><th>벤치</th><th>claim (CLR 적용)</th><th>claim (CLR 미적용)</th></tr></thead><tbody><tr><td class=h>AIME25</td><td>96.7</td><td>91.4</td></tr><tr><td class=h>AIME26</td><td>97.1</td><td>94.3</td></tr><tr><td class=h>HMMT25</td><td>95.4</td><td>—</td></tr><tr><td class=h>LiveCodeBench v6</td><td>80.2 (Pass@1)</td><td>—</td></tr><tr><td class=h>GPQA-Diamond</td><td>72.9</td><td>—</td></tr></tbody></table>
+ <p class=muted style="margin-top:8px">⚠️ CLR(Claim-Level Reliability)은 test-time scaling이며 구현 미공개 →
+ <b>CLR 미적용</b> 수치를 1차 재현 기준으로 본다.</p></div>
+<div class=day><h3 style="color:#3fb950">✅ R1 — 로드·단일문항 추론</h3><div style="font-size:13px">AIME 2024-I-1(정답 204)을 <b style='color:#3fb950'>정확히 해결</b> — 단계추론 후 <code>\boxed{204}</code>, correct=True. 생성 2225토큰.<br><span class=muted>※ GPU 경합(타 사용자 17GB)으로 <b>8-bit 양자화 sanity</b> 실행 — 파이프라인+추론력 검증용, 재현 수치 아님. 정식 벤치(S1)는 bf16.</span></div></div><div class=day><h3 style="color:#8b96a5">⏳ S1 — AIME25 30문항 pass@1 (bf16)</h3><div style="font-size:13px">bf16, temp=1.0/top_p=0.95로 측정해 claim <b>91.4</b>(CLR미적용)와 대조. GPU 17GB 여유 시 실행(큐잉).</div></div><div class=day><h3 style="color:#8b96a5">⏳ S2 — avg@k + 토큰/시간 프로파일</h3><div style="font-size:13px">k샘플 평균정답률 + 효율(토큰·시간) 분석.</div></div><div class=day><h3 style="color:#8b96a5">⏳ S3 — 개선 방향 실험</h3><div style="font-size:13px">Long2Short / 검증기반 self-consistency 등 개선 탐색.</div></div>
+</div><div class=panel id=p_bridge></div><div class=panel id=p_honest></div><div class=panel id=p_commits></div>
+</main>
+<script>
+const COMMITS=[{"date": "2026-06-20", "hash": "a6713fa", "subj": "feat(track-c): R1 PASS — VibeThinker-3B가 AIME 문제 정확히 해결 (8-bit sanity)"}, {"date": "2026-06-20", "hash": "bb288f6", "subj": "feat(track-c): VibeThinker-3B 재현 연구 착수 — 사전등록 + R1 하니스"}], DATES=["2026-06-20"], STATS=[["단계", "R1 완료", "재현 진행"], ["모델", "VibeThinker-3B", "Qwen2.5-Coder-3B 기반, MIT"], ["R1", "✅ 정답", "AIME 문항 \\boxed{204}"], ["claim AIME25", "91.4", "CLR미적용 (재현 목표)"], ["CLR", "미공개", "test-time scaling, 재현 제외"], ["커밋", "2", "신규 트랙"]], MILE={"2026-06-20": [["트랙 C 착수 + 사전등록", "VibeThinker-3B 재현 계획(claim표·합격선), CLR 미공개→CLR미적용 1차"], ["R1 PASS", "VibeThinker-3B가 AIME 문항 정확 해결(8-bit sanity), 파이프라인 검증"]]},
+      COR=[["3B가 AIME25 96.7?", "프런티어급 고점 — 특히 CLR(test-time)은 구현 미공개", "CLR미적용 단일추론을 1차 재현 기준으로 분리"], ["8-bit 결과 = 재현 수치?", "아니오 — 양자화는 정확도 영향", "R1은 sanity로만, 벤치는 bf16(S1)"]], CH=null,
+      BRIDGE=[["MGPO를 공유하지만 도메인이 다르다", "트랙 C(수학추론)와 트랙 B(OpenVLA 물리)는 둘 다 MGPO를 쓰지만 과제·보상·합격선이 독립. 별개 트랙."], ["재현→개선 패러다임", "C는 '공개 주장 재현 후 개선'. 검증가능 보상(정답) 기반이라 MGPO/self-consistency 개선이 직접 적용 가능."]], BRIDGE_NOTE="세 트랙은 독립 연구다. C는 VibeThinker를 우리 환경에서 <b>먼저 재현</b>하고 개선을 모색한다 — MGPO라는 도구만 트랙 B와 공유한다.", PANELS=[["timeline", "타임라인"], ["results", "📊 재현 결과"], ["bridge", "🔗 연결"], ["honest", "정직한 정정"], ["commits", "커밋"]];
+document.getElementById('meta').textContent='기간 '+(DATES[0]||'-')+' ~ '+(DATES[DATES.length-1]||'-')+'  ·  커밋 '+COMMITS.length;
+cards.innerHTML=STATS.map(s=>`<div class=card><div class=k>${s[0]}</div><div class=v>${s[1]}</div><div class=s>${s[2]}</div></div>`).join('');
+tabs.innerHTML=PANELS.map((t,i)=>`<div class="tab${i==0?' on':''}" data-t=${t[0]}>${t[1]}</div>`).join('');
+function show(t){document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.dataset.t==t));
+ document.querySelectorAll('.panel').forEach(e=>e.classList.remove('on'));document.getElementById('p_'+t).classList.add('on');
+ if(t=='results')draw();}
+document.querySelectorAll('.tab').forEach(e=>e.onclick=()=>show(e.dataset.t));
+p_timeline.innerHTML=[...DATES].reverse().map(d=>{
+ const ms=(MILE[d]||[]).map(m=>`<div class=mi><b>${m[0]}</b><span>${m[1]}</span></div>`).join('');
+ const cs=COMMITS.filter(c=>c.date==d);
+ return `<div class=day><h3>📅 ${d} <span class=muted style="font-size:12px">(${cs.length} commits)</span></h3>${ms}</div>`;}).join('');
+p_bridge.innerHTML='<div class=day><h3>🔗 트랙 간 연결</h3><p class=muted>'+BRIDGE_NOTE+'</p>'+
+ BRIDGE.map(b=>`<div class=mi><b>${b[0]}</b><span>${b[1]}</span></div>`).join('')+'</div>';
+p_honest.innerHTML='<p class=muted>이 트랙에서 스스로 정정한 과장/오류(사용자 지적 포함):</p>'+
+ COR.map(c=>`<div class=cor><div class=q>⚠ ${c[0]}</div><div class=a>→ ${c[1]}</div><div class=f>✓ ${c[2]}</div></div>`).join('');
+p_commits.innerHTML='<table><thead><tr><th>날짜</th><th>해시</th><th>내용</th></tr></thead><tbody>'+
+ COMMITS.map(c=>`<tr><td class=muted>${c.date}</td><td class=h>${c.hash}</td><td>${c.subj}</td></tr>`).join('')+'</tbody></table>';
+
+function axes(ctx,W,H,pad){ctx.clearRect(0,0,W,H);ctx.strokeStyle='#283040';ctx.fillStyle='#8b96a5';ctx.font='10px monospace';return{x0:pad,y0:H-28,pw:W-pad-10,ph:H-28-10};}
+let drawn=false;
+function draw(){if(drawn||!CH)return;drawn=true;
+ let c=c1.getContext('2d'),A=axes(c,520,300,40);const L=CH.compute.L;
+ const lx=v=>A.x0+Math.log2(v/L[0])/Math.log2(L[L.length-1]/L[0])*A.pw;
+ const allt=CH.compute.tf.concat(CH.compute.deltanet),mn=Math.min(...allt),mx=Math.max(...allt);
+ const ly=v=>A.y0-(Math.log10(v)-Math.log10(mn))/(Math.log10(mx)-Math.log10(mn))*A.ph;
+ [['tf','#f85149'],['deltanet','#3fb950']].forEach(([k,col])=>{c.strokeStyle=col;c.fillStyle=col;c.lineWidth=2;c.beginPath();
+  CH.compute[k].forEach((v,i)=>{const x=lx(L[i]),y=ly(v);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+  CH.compute[k].forEach((v,i)=>{c.beginPath();c.arc(lx(L[i]),ly(v),3,0,7);c.fill();});});
+ c.fillStyle='#8b96a5';L.forEach(v=>c.fillText(v>=1024?(v/1024)+'K':v,lx(v)-8,A.y0+14));
+ c=c2.getContext('2d');A=axes(c,520,300,44);const L2=CH.infer.L;
+ const lx2=v=>A.x0+Math.log2(v/L2[0])/Math.log2(L2[L2.length-1]/L2[0])*A.pw;
+ const mx2=Math.max(...CH.infer.kv),ly2=v=>A.y0-(Math.log10(Math.max(v,.01))-Math.log10(.01))/(Math.log10(mx2)-Math.log10(.01))*A.ph;
+ c.strokeStyle='#f85149';c.fillStyle='#f85149';c.lineWidth=2;c.beginPath();
+ CH.infer.kv.forEach((v,i)=>{const x=lx2(L2[i]),y=ly2(v);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+ c.strokeStyle='#4f8cff';c.beginPath();L2.forEach((l,i)=>{const x=lx2(l),y=ly2(CH.infer.state);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+ c.fillStyle='#8b96a5';L2.forEach(v=>c.fillText(v>=1e6?(v/1e6)+'M':(v/1024)+'K',lx2(v)-10,A.y0+14));c.fillText('GB',6,16);
+ c=c3.getContext('2d');A=axes(c,520,300,30);const N=CH.recall.names.length,sw=A.pw/N;
+ for(let g=0;g<=4;g++){const y=A.y0-g/4*A.ph;c.strokeStyle='#283040';c.beginPath();c.moveTo(A.x0,y);c.lineTo(520-10,y);c.stroke();c.fillStyle='#8b96a5';c.fillText((g/4).toFixed(2),6,y+3);}
+ CH.recall.vals.forEach((v,i)=>{const x=A.x0+i*sw+8,bw=sw-16;c.fillStyle=v>=.9?'#3fb950':(v>.2?'#d29922':'#f85149');c.fillRect(x,A.y0-v*A.ph,bw,v*A.ph);
+  c.save();c.translate(x+bw/2,A.y0+12);c.rotate(-.4);c.fillStyle='#8b96a5';c.textAlign='right';c.fillText(CH.recall.names[i],0,0);c.restore();});
+ c=c4.getContext('2d');A=axes(c,520,300,34);const S=CH.grok.steps,R=CH.grok.rec,smx=S[S.length-1];
+ for(let g=0;g<=4;g++){const y=A.y0-g/4*A.ph;c.strokeStyle='#283040';c.beginPath();c.moveTo(A.x0,y);c.lineTo(520-10,y);c.stroke();c.fillStyle='#8b96a5';c.fillText((g/4).toFixed(2),6,y+3);}
+ c.strokeStyle='#4f8cff';c.lineWidth=2;c.beginPath();S.forEach((s,i)=>{const x=A.x0+s/smx*A.pw,y=A.y0-R[i]*A.ph;i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+ const gx=A.x0+15000/smx*A.pw;c.strokeStyle='#3fb950';c.setLineDash([4,3]);c.beginPath();c.moveTo(gx,A.y0);c.lineTo(gx,A.y0-A.ph);c.stroke();c.setLineDash([]);c.fillStyle='#3fb950';c.fillText('grok@15k',gx+4,A.y0-A.ph+12);}
+
+show('timeline');
+</script></body></html>

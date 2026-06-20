@@ -32,7 +32,7 @@ td.h{font:12px var(--mono);color:var(--acc)}
 .muted{color:var(--mut)}.legend{font:11px var(--mono);color:var(--mut);margin-top:6px}
 </style></head><body>
 <header><div><h1>🤖 트랙 B — OpenVLA × MGPO 물리오류 연구</h1><div class=tag>MGPO + compression-coverage → 물리오류 행동 감소 (사전등록)</div><div class=sub id=meta></div></div>
-<a class=xlink href="track_a_growing_memory.html">↔ 🔬 트랙 A — growing-memory</a></header>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><a class=xlink href="track_a_growing_memory.html">↔ 🔬 트랙 A</a><a class=xlink href="track_c_vibethinker.html">↔ 🧮 트랙 C</a></div></header>
 <main>
  <div class=cards id=cards></div>
  <div class=tabs id=tabs></div>
@@ -106,7 +106,7 @@ p_timeline.innerHTML=[...DATES].reverse().map(d=>{
  const ms=(MILE[d]||[]).map(m=>`<div class=mi><b>${m[0]}</b><span>${m[1]}</span></div>`).join('');
  const cs=COMMITS.filter(c=>c.date==d);
  return `<div class=day><h3>📅 ${d} <span class=muted style="font-size:12px">(${cs.length} commits)</span></h3>${ms}</div>`;}).join('');
-p_bridge.innerHTML='<div class=day><h3>🔗 두 연구의 연결점 (단 하나, Phase 2)</h3><p class=muted>'+BRIDGE_NOTE+'</p>'+
+p_bridge.innerHTML='<div class=day><h3>🔗 트랙 간 연결</h3><p class=muted>'+BRIDGE_NOTE+'</p>'+
  BRIDGE.map(b=>`<div class=mi><b>${b[0]}</b><span>${b[1]}</span></div>`).join('')+'</div>';
 p_honest.innerHTML='<p class=muted>이 트랙에서 스스로 정정한 과장/오류(사용자 지적 포함):</p>'+
  COR.map(c=>`<div class=cor><div class=q>⚠ ${c[0]}</div><div class=a>→ ${c[1]}</div><div class=f>✓ ${c[2]}</div></div>`).join('');
