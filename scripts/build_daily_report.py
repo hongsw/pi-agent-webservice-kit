@@ -220,6 +220,32 @@ C_CLAIMS = [  # (벤치, CLR적용, CLR미적용)
   ("AIME25", "96.7", "91.4"), ("AIME26", "97.1", "94.3"), ("HMMT25", "95.4", "—"),
   ("LiveCodeBench v6", "80.2 (Pass@1)", "—"), ("GPQA-Diamond", "72.9", "—"),
 ]
+C_S1 = load_json("report/data/c_s1_aime.json")  # AIME25 재현 실측(있으면 자동 반영)
+
+
+def _c_s1_stage():
+    if not C_S1:
+        return {"id": "S1", "title": "S1 — AIME25 30문항 pass@1 (bf16)", "status": "pending",
+                "body": "bf16, temp=1.0/top_p=0.95로 측정해 claim <b>91.4</b>(CLR미적용)와 대조. GPU 여유 시 실행(큐잉)."}
+    d = C_S1
+    ps = d.get("problems", [])
+    tr = [p for p in ps if p.get("truncated_any")]
+    nt = [p for p in ps if not p.get("truncated_any")]
+    tr_ok = sum(p["pass1"] for p in tr)
+    nt_ok = sum(p["pass1"] for p in nt)
+    p1 = d["pass@1"] * 100
+    body = (
+        f"<b>pass@1 = {p1:.1f}%</b> ({sum(p['pass1'] for p in ps)}/{d['n']}) · max_new={d['max_new']} · "
+        f"평균 {d['mean_tokens']:.0f} 토큰 · {d['wall_sec']/60:.0f}분<br>"
+        f"claim(CLR미적용) <b>91.4</b> 대비 약 {91.4-p1:.0f}%p 낮음 → <b>판정: 부분재현(설정차)</b>.<br>"
+        f"<span style='color:#3fb950'>핵심: <b>truncation율 {d['trunc_rate']*100:.0f}%</b>. "
+        f"잘리지 않은 문항은 <b>{nt_ok}/{len(nt)} = {nt_ok/max(len(nt),1)*100:.0f}% 정답</b>, "
+        f"잘린 문항은 {tr_ok}/{len(tr)}.</span> "
+        f"<span class=muted>즉 16k 안에 추론을 끝내면 거의 다 맞힘 — 격차는 능력이 아니라 토큰한도(claim은 40k). "
+        f"개선 방향=Long2Short(적은 토큰으로 풀기).</span>")
+    return {"id": "S1", "title": f"S1 — AIME25 pass@1 = {p1:.0f}% (bf16, max 16k)", "status": "done", "body": body}
+
+
 # 단계 결과: 새 결과가 나오면 dict 한 개씩 추가 (status: done|pending|wip)
 C_STAGES = [
   {"id": "R1", "title": "R1 — 로드·단일문항 추론", "status": "done",
@@ -227,20 +253,22 @@ C_STAGES = [
            "<code>\\boxed{204}</code>, correct=True. 생성 2225토큰.<br>"
            "<span class=muted>※ GPU 경합(타 사용자 17GB)으로 <b>8-bit 양자화 sanity</b> 실행 — 파이프라인+추론력 검증용, "
            "재현 수치 아님. 정식 벤치(S1)는 bf16.</span>"},
-  {"id": "S1", "title": "S1 — AIME25 30문항 pass@1 (bf16)", "status": "pending",
-   "body": "bf16, temp=1.0/top_p=0.95로 측정해 claim <b>91.4</b>(CLR미적용)와 대조. GPU 17GB 여유 시 실행(큐잉)."},
-  {"id": "S2", "title": "S2 — avg@k + 토큰/시간 프로파일", "status": "pending",
-   "body": "k샘플 평균정답률 + 효율(토큰·시간) 분석."},
+  _c_s1_stage(),
+  {"id": "S2", "title": "S2 — 40k 토큰 재측정 + avg@k", "status": "pending",
+   "body": "truncation 제거(max 40960) + k샘플 avg@k로 claim에 더 근접하는지 확인."},
   {"id": "S3", "title": "S3 — 개선 방향 실험", "status": "pending",
    "body": "Long2Short / 검증기반 self-consistency 등 개선 탐색."},
 ]
 C_MILE = {
   "2026-06-20": [("트랙 C 착수 + 사전등록", "VibeThinker-3B 재현 계획(claim표·합격선), CLR 미공개→CLR미적용 1차"),
                  ("R1 PASS", "VibeThinker-3B가 AIME 문항 정확 해결(8-bit sanity), 파이프라인 검증")],
+  "2026-06-22": [("S1 — AIME25 재현(bf16)", "pass@1 66.7%(20/30). 미잘림 14/14=100%, truncation 53% → "
+                 "격차는 토큰한도(claim 40k vs 우리 16k), 능력 아님")],
 }
 C_COR = [
   ("3B가 AIME25 96.7?", "프런티어급 고점 — 특히 CLR(test-time)은 구현 미공개", "CLR미적용 단일추론을 1차 재현 기준으로 분리"),
   ("8-bit 결과 = 재현 수치?", "아니오 — 양자화는 정확도 영향", "R1은 sanity로만, 벤치는 bf16(S1)"),
+  ("66.7% < 91.4 = 재현 실패?", "아니오 — 미잘림 문항은 14/14=100%", "격차=16k truncation(53%), claim은 40k. 부분재현(설정차)"),
 ]
 C_BRIDGE = [
   ("MGPO를 공유하지만 도메인이 다르다",
@@ -317,9 +345,13 @@ TRACKS = {
     "stats": lambda cm, dts: [
       ("단계", next((s["id"] for s in reversed(C_STAGES) if s["status"] == "done"), "S0") + " 완료", "재현 진행"),
       ("모델", "VibeThinker-3B", "Qwen2.5-Coder-3B 기반, MIT"),
-      ("R1", "✅ 정답", "AIME 문항 \\boxed{204}"),
-      ("claim AIME25", "91.4", "CLR미적용 (재현 목표)"),
-      ("CLR", "미공개", "test-time scaling, 재현 제외"),
+      ("AIME25 pass@1", f"{C_S1['pass@1']*100:.0f}%", f"우리측정(max16k) vs claim 91.4") if C_S1
+        else ("R1", "✅ 정답", "AIME 문항 \\boxed{204}"),
+      ("미잘림 정답률", f"{sum(p['pass1'] for p in C_S1['problems'] if not p['truncated_any'])}/"
+        f"{sum(1 for p in C_S1['problems'] if not p['truncated_any'])}", "16k안에 끝낸 문항") if C_S1
+        else ("claim AIME25", "91.4", "CLR미적용 (재현 목표)"),
+      ("truncation율", f"{C_S1['trunc_rate']*100:.0f}%", "16k 초과 잘림(격차원인)") if C_S1
+        else ("CLR", "미공개", "test-time scaling, 재현 제외"),
       ("커밋", "{N}", "신규 트랙"),
     ],
     "results": "RESULTS_C",

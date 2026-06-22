@@ -1,0 +1,408 @@
+{
+  "model": "WeiboAI/VibeThinker-3B",
+  "dataset": "yentinglin/aime_2025",
+  "n": 30,
+  "samples": 1,
+  "max_new": 16384,
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "pass@1": 0.6666666666666666,
+  "avg@1": 0.6666666666666666,
+  "claim_no_clr": 91.4,
+  "claim_clr": 96.7,
+  "mean_tokens": 12137.266666666666,
+  "trunc_rate": 0.5333333333333333,
+  "wall_sec": 4940.4,
+  "problems": [
+    {
+      "idx": 0,
+      "gold": 70,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        70
+      ],
+      "tokens": [
+        1781
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 1,
+      "gold": 588,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        13
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 2,
+      "gold": 16,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        16
+      ],
+      "tokens": [
+        4245
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 3,
+      "gold": 117,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        117
+      ],
+      "tokens": [
+        4132
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 4,
+      "gold": 279,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        279
+      ],
+      "tokens": [
+        14288
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 5,
+      "gold": 504,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        504
+      ],
+      "tokens": [
+        9011
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 6,
+      "gold": 821,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        821
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 7,
+      "gold": 77,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        77
+      ],
+      "tokens": [
+        6369
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 8,
+      "gold": 62,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        62
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 9,
+      "gold": 81,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        43
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 10,
+      "gold": 259,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        259
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 11,
+      "gold": 510,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        -13
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 12,
+      "gold": 204,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        null
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 13,
+      "gold": 60,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        93
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 14,
+      "gold": 735,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        3
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 15,
+      "gold": 468,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        468
+      ],
+      "tokens": [
+        3811
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 16,
+      "gold": 49,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        49
+      ],
+      "tokens": [
+        3062
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 17,
+      "gold": 82,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        82
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 18,
+      "gold": 106,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        106
+      ],
+      "tokens": [
+        8592
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 19,
+      "gold": 336,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        null
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 20,
+      "gold": 293,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        293
+      ],
+      "tokens": [
+        5676
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 21,
+      "gold": 237,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        237
+      ],
+      "tokens": [
+        7427
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 22,
+      "gold": 610,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        610
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 23,
+      "gold": 149,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        149
+      ],
+      "tokens": [
+        13181
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 24,
+      "gold": 907,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        907
+      ],
+      "tokens": [
+        8483
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 25,
+      "gold": 113,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        113
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 26,
+      "gold": 19,
+      "pass1": true,
+      "avg_k": 1.0,
+      "preds": [
+        19
+      ],
+      "tokens": [
+        11916
+      ],
+      "truncated_any": false
+    },
+    {
+      "idx": 27,
+      "gold": 248,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        1
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 28,
+      "gold": 104,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        2
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    },
+    {
+      "idx": 29,
+      "gold": 240,
+      "pass1": false,
+      "avg_k": 0.0,
+      "preds": [
+        4
+      ],
+      "tokens": [
+        16384
+      ],
+      "truncated_any": true
+    }
+  ]
+}
